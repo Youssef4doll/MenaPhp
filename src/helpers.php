@@ -111,3 +111,50 @@ function spec_rows(?string $specs): array
     }
     return $rows;
 }
+
+/**
+ * A social profile's address (https), or "" when it is not a profile on that
+ * site (social.ts profileUrl): a bare or wrong link reads as a dead link.
+ */
+function profile_url(string $kind, string $raw): string
+{
+    $hosts = ['instagram' => ['instagram.com'], 'facebook' => ['facebook.com', 'fb.com'], 'tiktok' => ['tiktok.com']][$kind] ?? null;
+    $s = trim($raw);
+    if ($hosts === null || $s === '') {
+        return '';
+    }
+    if (preg_match('/^@[\w.]{2,}$/', $s) && $kind !== 'facebook') {
+        $s = 'https://www.' . $hosts[0] . '/' . ($kind === 'tiktok' ? $s : substr($s, 1));
+    }
+    if (!preg_match('#^https?://#i', $s)) {
+        $s = 'https://' . $s;
+    }
+    $u = parse_url($s);
+    if (!$u || empty($u['host'])) {
+        return '';
+    }
+    $host = (string) preg_replace('/^(www|m|web|vm)\./', '', strtolower($u['host']));
+    if (!in_array($host, $hosts, true)) {
+        return '';
+    }
+    $first = array_values(array_filter(explode('/', $u['path'] ?? '')))[0] ?? '';
+    $not = ['login', 'accounts', 'explore', 'sharer', 'sharer.php', 'share', 'dialog', 'home.php', 'watch', 'groups', 'hashtag', 'tag', 'search'];
+    if ($first === '' || in_array(strtolower($first), $not, true)) {
+        return '';
+    }
+    parse_str($u['query'] ?? '', $query);
+    if (($kind === 'tiktok' && !str_starts_with($first, '@')) || ($kind === 'facebook' && $first === 'profile.php' && empty($query['id']))) {
+        return '';
+    }
+    $out = 'https://' . $u['host'] . (isset($u['port']) ? ':' . $u['port'] : '') . ($u['path'] ?? '/') . (isset($u['query']) ? '?' . $u['query'] : '');
+    return rtrim($out, '/');
+}
+
+/** A file of public/ with its version, so it can be kept a year by browsers: "/assets/shop.css?v=1a2b3c4d". */
+function asset(string $path): string
+{
+    static $v = [];
+    $file = ROOT . '/public' . $path;
+    $v[$path] ??= is_file($file) ? substr(md5((string) filemtime($file) . filesize($file)), 0, 8) : '0';
+    return $path . '?v=' . $v[$path];
+}

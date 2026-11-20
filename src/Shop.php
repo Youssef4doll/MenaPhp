@@ -48,16 +48,115 @@ final class Shop
         self::page('shop/notfound', [], t('notFound.title'));
     }
 
+    /** "À moins de 30 DT": the small prices' shelf, in millimes. */
+    private const SMALL_PRICE = 30000;
+
+    /** The home page, built as the Next.js shop's src/app/[lang]/page.tsx builds it. */
     public static function home(): void
     {
         self::remember();
-        $featured = Catalog::cards('p.featured = true', [], 'p."updatedAt" DESC', 12);
-        $newest = Catalog::cards('true', [], 'p."createdAt" DESC', 12);
-        self::page('shop/home', [
-            'categories' => Catalog::categories(),
-            'featured' => $featured,
-            'newest' => $newest,
-        ], Settings::get('shop.name'), null, url('/'));
+        $settings = Settings::all();
+        $home = Catalog::home();
+        $cats = Catalog::homeCategories();
+        $ranked = Catalog::homeFeed();
+        $hero = $settings['hero'];
+        $slides = $hero['slides'] ?? [];
+        if (!$slides && !empty($hero['imageId'])) {
+            $slides = [['imageId' => $hero['imageId'], 'link' => '', 'alt' => '', 'altAr' => '']];
+        }
+        $banners = [];
+        foreach (array_values($slides) as $i => $b) {
+            $to = self::bannerLink((string) ($b['link'] ?? ''));
+            $banners[] = [
+                'imageId' => $b['imageId'],
+                'alt' => Ui::pick($b['alt'] ?? '', $b['altAr'] ?? ''),
+                'label' => t('product.photo', $i + 1, count($slides)),
+                'href' => $to ? ($to['path'] ?? null ? url($to['path']) : $to['url']) : null,
+                'external' => (bool) ($to['url'] ?? false),
+            ];
+        }
+        $shown = array_slice($cats, 0, 12);
+        $best = count($home['bestsellers']) >= 4 ? array_slice($home['bestsellers'], 0, 8) : [];
+        $seen = [];
+        foreach ([...$home['featured'], ...$best] as $c) {
+            $seen[$c['id']] = true;
+        }
+        $fresh = array_values(array_filter($home['newest'], static fn ($c) => !isset($seen[$c['id']])));
+
+        // The ranked shop cut into shelves that each show something new (products already shown go last).
+        $feed = $ranked['feed'];
+        $used = $seen;
+        $shelf = static function (array $list, int $n = 8) use (&$used): array {
+            $pick = array_slice([...array_filter($list, static fn ($c) => !isset($used[$c['id']])), ...array_filter($list, static fn ($c) => isset($used[$c['id']]))], 0, $n);
+            foreach ($pick as $c) {
+                $used[$c['id']] = true;
+            }
+            return array_values($pick);
+        };
+        $cards = array_column($feed, 'card');
+        $dealList = array_values(array_filter($cards, static fn ($c) => Rules::saving($c) >= 0.1));
+        $keyed = array_map(null, $dealList, array_keys($dealList));
+        usort($keyed, static fn ($a, $b) => Rules::saving($b[0]) <=> Rules::saving($a[0]) ?: $a[1] <=> $b[1]);
+        $deals = $shelf(array_column($keyed, 0));
+        $catOrder = array_values(array_unique(array_filter(array_column($feed, 'category'))));
+        $catShelves = [];
+        foreach ($catOrder as $slug) {
+            $cat = null;
+            foreach ($ranked['categories'] as $c) {
+                if ($c['slug'] === $slug) {
+                    $cat = $c;
+                }
+            }
+            $list = array_column(array_filter($feed, static fn ($f) => $f['category'] === $slug), 'card');
+            if ($cat && count($list) >= 4) {
+                $catShelves[] = ['cat' => $cat, 'list' => $list];
+            }
+        }
+        $catShelves = array_map(static fn ($x) => ['cat' => $x['cat'], 'products' => $shelf($x['list'])], array_slice($catShelves, 0, 4));
+        $small = $shelf(array_values(array_filter($cards, static fn ($c) => ($c['packOf'] ? $c['price'] / $c['packOf'] : $c['price']) <= self::SMALL_PRICE)));
+        $seeMore = t('home.seeMore');
+        $quads = [];
+        foreach ($catShelves as $cs) {
+            $quads[] = ['key' => 'cat-' . $cs['cat']['slug'], 'title' => t('home.bestOf', Ui::pick($cs['cat']['name'], $cs['cat']['nameAr'])), 'link' => ['href' => url('/categorie/' . $cs['cat']['slug']), 'label' => $seeMore], 'products' => $cs['products']];
+        }
+        $quads[] = ['key' => 'deals', 'title' => t('home.deals'), 'link' => ['href' => url('/boutique'), 'label' => $seeMore], 'products' => $deals];
+        $quads[] = ['key' => 'small', 'title' => t('home.small', Ui::money(self::SMALL_PRICE)), 'link' => ['href' => url('/boutique?tri=price_asc'), 'label' => $seeMore], 'products' => $small];
+        $quads[] = ['key' => 'new', 'title' => t('home.newest'), 'link' => ['href' => url('/boutique'), 'label' => $seeMore], 'products' => $fresh];
+        $quads[] = ['key' => 'featured', 'title' => t('home.featured'), 'link' => ['href' => url('/boutique'), 'label' => $seeMore], 'products' => $home['featured']];
+        $quads = array_slice(array_values(array_filter($quads, static fn ($q) => count($q['products']) >= 4)), 0, 8);
+
+        View::render('shop/home', [
+            'title' => '',
+            'description' => null,
+            'canonical' => url('/'),
+            'jsonLd' => [Seo::organization($settings), Seo::website($settings)],
+            'hero' => $hero,
+            'shown' => $shown,
+            'banners' => $banners,
+            'quads' => $quads,
+            'home' => $home,
+            'best' => $best,
+            'deals' => $deals,
+            'catShelves' => $catShelves,
+            'small' => $small,
+            'fresh' => $fresh,
+            'forClient' => array_map(static fn ($f) => ['card' => $f['card'], 'category' => $f['category']], array_slice($feed, 0, 80)),
+            'settings' => $settings,
+        ]);
+    }
+
+    /** Where a banner leads: a page of the shop, or a full https address; anything else is no link (bannerLink). */
+    private static function bannerLink(string $link): ?array
+    {
+        $l = trim($link);
+        if ($l === '') {
+            return null;
+        }
+        if (preg_match('#^/(?!/)\S*$#', $l)) {
+            return ['path' => (string) preg_replace('#^/(ar|fr)(?=/|$)#', '', $l) ?: '/'];
+        }
+        $u = parse_url($l);
+        return $u && ($u['scheme'] ?? '') === 'https' && !empty($u['host']) ? ['url' => $l] : null;
     }
 
     private const SORTS = ['new' => 'p."createdAt" DESC', 'price_asc' => 'p.price ASC, p."createdAt" DESC', 'price_desc' => 'p.price DESC, p."createdAt" DESC'];

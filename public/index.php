@@ -26,6 +26,12 @@ try {
     }
 
     $router = new Router();
+    if (str_starts_with($path, '/api/')) {
+        $GLOBALS['MENA_LANG'] = 'fr';
+        Api::routes($router);
+        $router->dispatch($method, $path);
+        exit;
+    }
     if ($path === '/admin' || str_starts_with($path, '/admin/')) {
         View::securityHeaders(true);
         $GLOBALS['MENA_LANG'] = 'fr';

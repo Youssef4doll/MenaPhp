@@ -109,6 +109,20 @@ foreach (['fr', 'ar'] as $l) {
 }
 restore_error_handler();
 
+// The same words as the Next.js shop: every text with values, called as it calls them (tests/fixtures/next-texts.json).
+foreach (json_decode((string) file_get_contents(__DIR__ . '/fixtures/next-texts.json'), true) as $c) {
+    $v = Lang::dict($c['lang']);
+    foreach (explode('.', $c['path']) as $k) {
+        $v = $v[$k] ?? null;
+    }
+    try {
+        $got = $v instanceof Closure ? (string) $v(...$c['args']) : 'missing';
+    } catch (Throwable $e) {
+        $got = 'error: ' . $e->getMessage();
+    }
+    same("next text {$c['lang']} {$c['path']} " . json_encode($c['args']), $got, $c['text']);
+}
+
 $GLOBALS['MENA_LANG'] = 'fr';
 same('range fr', Settings::rangeLabel(1, 2, 'fr'), '1 à 2 jours ouvrés');
 same('range ar', Settings::rangeLabel(2, 2, 'ar'), 'خلال 2 أيام عمل');
@@ -119,6 +133,64 @@ same('pg array empty', Db::parseArray('{}'), []);
 if (Tokens::hasSecret()) {
     same('token length', strlen(Tokens::orderToken('salt')), 32);
     check('ref format', (bool) preg_match('/^MN-[23456789A-HJ-NP-Z]{6}$/', Tokens::orderRef()));
+}
+
+// The Next.js shop's display rules and search (tests/fixtures/next-rules.json, made by tools/rules-fixture.mts).
+$rx = json_decode((string) file_get_contents(__DIR__ . '/fixtures/next-rules.json'), true);
+foreach ($rx['cards'] as $i => $c) {
+    same("card #$i price", Rules::cardPrice($c['row'], $rx['nowUtc']), $c['price']);
+    same("card #$i deal", Rules::cardDeal($c['row'], $rx['nowUtc']), $c['deal']);
+    same("card #$i stock", Rules::stockState($c['row']), $c['stock']);
+}
+foreach ($rx['offers'] as $i => $c) {
+    same("lead offer #$i", Rules::leadOffer($c['set']), $c['lead']);
+    same("offer compare #$i", array_map(static fn ($o) => Rules::offerCompareAt($c['set'], $o, 79000), $c['set']), $c['compare']);
+}
+foreach ($rx['discount'] as $c) {
+    same("discount {$c['p']}/{$c['c']}", Rules::discountPct($c['p'], $c['c']), $c['pct']);
+}
+foreach ($rx['lastDay'] as $c) {
+    same("last day {$c['e']}", Rules::offerLastDay($c['e']), $c['day']);
+}
+foreach ($rx['days'] as $c) {
+    same("day {$c['d']} {$c['l']}", Rules::formatDay($c['d'], $c['l']), $c['s']);
+}
+foreach ($rx['specs'] as $i => $c) {
+    same("specs #$i", Rules::parseSpecs($c['s']), $c['out']);
+}
+foreach ($rx['videos'] as $c) {
+    same("video {$c['v']}", Rules::parseVideo($c['v']), $c['out']);
+}
+foreach ($rx['sold'] as $c) {
+    same("sold {$c['n']}", Rules::soldStep($c['n']), $c['s']);
+}
+$feed = $rx['feed'];
+foreach ($feed['items'] as $i => $it) {
+    check("feed saving #$i", abs(Rules::saving($it['card']) - $feed['savings'][$i]) < 1e-9, Rules::saving($it['card']) . ' vs ' . $feed['savings'][$i]);
+    check("feed score #$i", abs(Rules::score($it, (float) $rx['now']) - $feed['scores'][$i]) < 1e-9, Rules::score($it, (float) $rx['now']) . ' vs ' . $feed['scores'][$i]);
+}
+same('feed ranked', array_map(static fn ($i) => $i['card']['id'], Rules::rankFeed($feed['items'], (float) $rx['now'])), $feed['ranked']);
+same('feed diversified', array_map(static fn ($i) => $i['card']['id'], Rules::diversify($feed['items'])), $feed['diversified']);
+$sx = $rx['search'];
+foreach ($sx['normalize'] as $c) {
+    same("normalize «{$c['t']}»", Search::normalize($c['t']), $c['n']);
+    same("tokenize «{$c['t']}»", Search::tokenize($c['t']), $c['k']);
+    same("synonyms «{$c['t']}»", Search::withSynonyms(Search::tokenize($c['t'])), $c['syn']);
+}
+foreach ($sx['distance'] as $c) {
+    same("distance {$c['a']}/{$c['b']}", Search::distance($c['a'], $c['b']), $c['d']);
+    same("distance1 {$c['a']}/{$c['b']}", Search::distance($c['a'], $c['b'], 1), $c['d1']);
+}
+foreach ($sx['match'] as $c) {
+    check("match {$c['a']}/{$c['b']}/" . (int) $c['last'], abs(Search::matchWord($c['a'], $c['b'], $c['last']) - $c['m']) < 1e-9, Search::matchWord($c['a'], $c['b'], $c['last']) . ' vs ' . $c['m']);
+}
+foreach ($sx['rank'] as $c) {
+    $got = array_map(static fn ($r) => ['id' => $r['id'], 'score' => round($r['score'], 9), 'corrected' => $r['corrected']], Search::rank($c['q'], $sx['docs'], $c['prefix']));
+    $want = array_map(static fn ($r) => ['id' => $r['id'], 'score' => round((float) $r['score'], 9), 'corrected' => $r['corrected']], $c['r']);
+    same("rank «{$c['q']}» prefix=" . (int) $c['prefix'], $got, $want);
+}
+foreach ($sx['complete'] as $c) {
+    same("complete «{$c['q']}»", Search::complete($c['q'], $sx['phrases'], 4), $c['c']);
 }
 
 // ------------------------------------------------- 2. an order, for real

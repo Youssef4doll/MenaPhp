@@ -9,7 +9,8 @@ declare(strict_types=1);
  */
 final class Media
 {
-    public const WIDTHS = [360, 640, 1080, 1600];
+    /** The widths the Next.js shop's loader asks for (image-loader.ts IMG_WIDTHS). */
+    public const WIDTHS = [64, 96, 128, 200, 256, 360, 480, 640, 828, 1080, 1280, 1600];
 
     public static function ext(): string
     {
