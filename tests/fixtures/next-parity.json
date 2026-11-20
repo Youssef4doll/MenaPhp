@@ -1,0 +1,2110 @@
+{
+ "note": "Made by the Next.js shop's own code (src/lib/offer-label.ts, src/lib/pricing.ts). The PHP version must give the same answers.",
+ "zones": {
+  "Tunis": {
+   "minDays": 1,
+   "maxDays": 2,
+   "enabled": true
+  },
+  "Ariana": {
+   "minDays": 1,
+   "maxDays": 2,
+   "enabled": true
+  },
+  "Ben Arous": {
+   "minDays": 1,
+   "maxDays": 2,
+   "enabled": true
+  },
+  "Manouba": {
+   "minDays": 1,
+   "maxDays": 2,
+   "enabled": true
+  },
+  "Nabeul": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Zaghouan": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Bizerte": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Béja": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Jendouba": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Le Kef": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Siliana": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Sousse": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Monastir": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Mahdia": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Sfax": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Kairouan": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Kasserine": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Sidi Bouzid": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Gabès": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Médenine": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Tataouine": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Gafsa": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  },
+  "Tozeur": {
+   "minDays": 3,
+   "maxDays": 5,
+   "enabled": false
+  },
+  "Kébili": {
+   "minDays": 2,
+   "maxDays": 3,
+   "enabled": true
+  }
+ },
+ "catalogs": {
+  "plain": [
+   {
+    "id": "p1",
+    "slug": "p1",
+    "name": "Lampe",
+    "nameAr": "لمبة",
+    "price": 49900,
+    "cost": 20000,
+    "active": true,
+    "stockMode": "SUPPLIER",
+    "stockQty": 0,
+    "available": true,
+    "imageId": null,
+    "variants": [],
+    "offers": []
+   }
+  ],
+  "tracked": [
+   {
+    "id": "p1",
+    "slug": "p1",
+    "name": "Lampe",
+    "nameAr": "لمبة",
+    "price": 49900,
+    "cost": 20000,
+    "active": true,
+    "stockMode": "TRACKED",
+    "stockQty": 3,
+    "available": true,
+    "imageId": null,
+    "variants": [],
+    "offers": []
+   }
+  ],
+  "offers": [
+   {
+    "id": "p1",
+    "slug": "p1",
+    "name": "Lampe",
+    "nameAr": "لمبة",
+    "price": 49900,
+    "cost": 20000,
+    "active": true,
+    "stockMode": "SUPPLIER",
+    "stockQty": 0,
+    "available": true,
+    "imageId": null,
+    "variants": [],
+    "offers": [
+     {
+      "id": "o2",
+      "label": "Lot de 2",
+      "labelAr": null,
+      "quantity": 2,
+      "price": 89900,
+      "freeDelivery": false,
+      "active": true,
+      "endsAt": null
+     },
+     {
+      "id": "o3",
+      "label": "Achetez 2, la 3e offerte",
+      "labelAr": "اشري 2 والثالثة مجانا",
+      "quantity": 3,
+      "price": 99800,
+      "freeDelivery": true,
+      "active": true,
+      "endsAt": "2031-11-19 10:33:53"
+     },
+     {
+      "id": "old",
+      "label": "",
+      "labelAr": null,
+      "quantity": 2,
+      "price": 80000,
+      "freeDelivery": false,
+      "active": true,
+      "endsAt": "2020-01-01 00:00:00"
+     },
+     {
+      "id": "off",
+      "label": "",
+      "labelAr": null,
+      "quantity": 2,
+      "price": 80000,
+      "freeDelivery": false,
+      "active": false,
+      "endsAt": null
+     }
+    ]
+   }
+  ],
+  "variants": [
+   {
+    "id": "p1",
+    "slug": "p1",
+    "name": "Lampe",
+    "nameAr": "لمبة",
+    "price": 49900,
+    "cost": 20000,
+    "active": true,
+    "stockMode": "SUPPLIER",
+    "stockQty": 0,
+    "available": true,
+    "imageId": null,
+    "variants": [
+     {
+      "id": "v1",
+      "name": "Noir",
+      "nameAr": "أكحل",
+      "price": null,
+      "stockQty": 0,
+      "available": true
+     },
+     {
+      "id": "v2",
+      "name": "Grand",
+      "nameAr": null,
+      "price": 59900,
+      "stockQty": 0,
+      "available": true
+     },
+     {
+      "id": "v3",
+      "name": "Blanc",
+      "nameAr": null,
+      "price": null,
+      "stockQty": 0,
+      "available": false
+     }
+    ],
+    "offers": [
+     {
+      "id": "o2",
+      "label": "",
+      "labelAr": null,
+      "quantity": 2,
+      "price": 89900,
+      "freeDelivery": false,
+      "active": true,
+      "endsAt": null
+     }
+    ]
+   }
+  ],
+  "two": [
+   {
+    "id": "p1",
+    "slug": "p1",
+    "name": "Lampe",
+    "nameAr": "لمبة",
+    "price": 49900,
+    "cost": 20000,
+    "active": true,
+    "stockMode": "SUPPLIER",
+    "stockQty": 0,
+    "available": true,
+    "imageId": null,
+    "variants": [],
+    "offers": []
+   },
+   {
+    "id": "p2",
+    "slug": "p2",
+    "name": "Tapis",
+    "nameAr": "لمبة",
+    "price": 120000,
+    "cost": null,
+    "active": true,
+    "stockMode": "TRACKED",
+    "stockQty": 2,
+    "available": true,
+    "imageId": null,
+    "variants": [],
+    "offers": []
+   }
+  ],
+  "inactive": [
+   {
+    "id": "p1",
+    "slug": "p1",
+    "name": "Lampe",
+    "nameAr": "لمبة",
+    "price": 49900,
+    "cost": 20000,
+    "active": false,
+    "stockMode": "SUPPLIER",
+    "stockQty": 0,
+    "available": true,
+    "imageId": null,
+    "variants": [],
+    "offers": []
+   }
+  ]
+ },
+ "offerCases": [
+  {
+   "label": "Achetez 2, la 3e offerte",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "Achetez 2, la 3e offerte",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "Achetez 2, la 3e offerte",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Achetez 2, la 3e offerte",
+   "lineAr": "3 حبات · Achetez 2, la 3e offerte"
+  },
+  {
+   "label": "Achetez 2, la 3e offerte",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "2 + 1 offert",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "2 + 1 offert",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "2 + 1 offert",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · 2 + 1 offert",
+   "lineAr": "3 حبات · 2 + 1 offert"
+  },
+  {
+   "label": "2 + 1 offert",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "Lot de 2",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "Lot de 2",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "Lot de 2",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "Lot de 2",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "3 unités",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "3 unités",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "3 unités",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "3 unités",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "-20 %",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "-20 %",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "-20 %",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "-20 %",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "Pack 80 DT",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · Pack 80 DT",
+   "lineAr": "حبة وحدة · Pack 80 DT"
+  },
+  {
+   "label": "Pack 80 DT",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · Pack 80 DT",
+   "lineAr": "زوز حبات · Pack 80 DT"
+  },
+  {
+   "label": "Pack 80 DT",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Pack 80 DT",
+   "lineAr": "3 حبات · Pack 80 DT"
+  },
+  {
+   "label": "Pack 80 DT",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · Pack 80 DT",
+   "lineAr": "4 حبات · Pack 80 DT"
+  },
+  {
+   "label": "500 ml",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · 500 ml",
+   "lineAr": "حبة وحدة · 500 ml"
+  },
+  {
+   "label": "500 ml",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · 500 ml",
+   "lineAr": "زوز حبات · 500 ml"
+  },
+  {
+   "label": "500 ml",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · 500 ml",
+   "lineAr": "3 حبات · 500 ml"
+  },
+  {
+   "label": "500 ml",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · 500 ml",
+   "lineAr": "4 حبات · 500 ml"
+  },
+  {
+   "label": "الثانية",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "الثانية",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "الثانية",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "الثانية",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "زوز حبات",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "زوز حبات",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "زوز حبات",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "زوز حبات",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "اشري 2 والثالثة مجانا",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "اشري 2 والثالثة مجانا",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "اشري 2 والثالثة مجانا",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · اشري 2 والثالثة مجانا",
+   "lineAr": "3 حبات · اشري 2 والثالثة مجانا"
+  },
+  {
+   "label": "اشري 2 والثالثة مجانا",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "deux pour le prix d'un",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "deux pour le prix d'un",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · deux pour le prix d'un",
+   "lineAr": "زوز حبات · deux pour le prix d'un"
+  },
+  {
+   "label": "deux pour le prix d'un",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "deux pour le prix d'un",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "Pack famille",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · Pack famille",
+   "lineAr": "حبة وحدة · Pack famille"
+  },
+  {
+   "label": "Pack famille",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · Pack famille",
+   "lineAr": "زوز حبات · Pack famille"
+  },
+  {
+   "label": "Pack famille",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Pack famille",
+   "lineAr": "3 حبات · Pack famille"
+  },
+  {
+   "label": "Pack famille",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · Pack famille",
+   "lineAr": "4 حبات · Pack famille"
+  },
+  {
+   "label": "1 unité",
+   "quantity": 1,
+   "units": 1,
+   "fits": true,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "1 unité",
+   "quantity": 2,
+   "units": 1,
+   "fits": false,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "1 unité",
+   "quantity": 3,
+   "units": 1,
+   "fits": false,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "1 unité",
+   "quantity": 4,
+   "units": 1,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "Offre spéciale",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · Offre spéciale",
+   "lineAr": "حبة وحدة · Offre spéciale"
+  },
+  {
+   "label": "Offre spéciale",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · Offre spéciale",
+   "lineAr": "زوز حبات · Offre spéciale"
+  },
+  {
+   "label": "Offre spéciale",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Offre spéciale",
+   "lineAr": "3 حبات · Offre spéciale"
+  },
+  {
+   "label": "Offre spéciale",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · Offre spéciale",
+   "lineAr": "4 حبات · Offre spéciale"
+  },
+  {
+   "label": "٣ حبات",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "٣ حبات",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "٣ حبات",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "٣ حبات",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "Troisième offerte",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "Troisième offerte",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "Troisième offerte",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Troisième offerte",
+   "lineAr": "3 حبات · Troisième offerte"
+  },
+  {
+   "label": "Troisième offerte",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "2 pièces + livraison offerte",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "2 pièces + livraison offerte",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · 2 pièces + livraison offerte",
+   "lineAr": "زوز حبات · 2 pièces + livraison offerte"
+  },
+  {
+   "label": "2 pièces + livraison offerte",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "2 pièces + livraison offerte",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "x2",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "x2",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · x2",
+   "lineAr": "زوز حبات · x2"
+  },
+  {
+   "label": "x2",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "x2",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "Le duo",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · Le duo",
+   "lineAr": "حبة وحدة · Le duo"
+  },
+  {
+   "label": "Le duo",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · Le duo",
+   "lineAr": "زوز حبات · Le duo"
+  },
+  {
+   "label": "Le duo",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Le duo",
+   "lineAr": "3 حبات · Le duo"
+  },
+  {
+   "label": "Le duo",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · Le duo",
+   "lineAr": "4 حبات · Le duo"
+  },
+  {
+   "label": "حبة وحدة",
+   "quantity": 1,
+   "units": 1,
+   "fits": true,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "حبة وحدة",
+   "quantity": 2,
+   "units": 1,
+   "fits": false,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "حبة وحدة",
+   "quantity": 3,
+   "units": 1,
+   "fits": false,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "حبة وحدة",
+   "quantity": 4,
+   "units": 1,
+   "fits": false,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "باكو 4",
+   "quantity": 1,
+   "units": 4,
+   "fits": false,
+   "adds": false,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "باكو 4",
+   "quantity": 2,
+   "units": 4,
+   "fits": false,
+   "adds": false,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "باكو 4",
+   "quantity": 3,
+   "units": 4,
+   "fits": false,
+   "adds": false,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "باكو 4",
+   "quantity": 4,
+   "units": 4,
+   "fits": true,
+   "adds": false,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "عرض خاص",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · عرض خاص",
+   "lineAr": "حبة وحدة · عرض خاص"
+  },
+  {
+   "label": "عرض خاص",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · عرض خاص",
+   "lineAr": "زوز حبات · عرض خاص"
+  },
+  {
+   "label": "عرض خاص",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · عرض خاص",
+   "lineAr": "3 حبات · عرض خاص"
+  },
+  {
+   "label": "عرض خاص",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · عرض خاص",
+   "lineAr": "4 حبات · عرض خاص"
+  },
+  {
+   "label": "10 kg",
+   "quantity": 1,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "1 unité · 10 kg",
+   "lineAr": "حبة وحدة · 10 kg"
+  },
+  {
+   "label": "10 kg",
+   "quantity": 2,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · 10 kg",
+   "lineAr": "زوز حبات · 10 kg"
+  },
+  {
+   "label": "10 kg",
+   "quantity": 3,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · 10 kg",
+   "lineAr": "3 حبات · 10 kg"
+  },
+  {
+   "label": "10 kg",
+   "quantity": 4,
+   "units": null,
+   "fits": true,
+   "adds": true,
+   "lineFr": "4 unités · 10 kg",
+   "lineAr": "4 حبات · 10 kg"
+  },
+  {
+   "label": "Lot de 3 à 99 DT",
+   "quantity": 1,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "Lot de 3 à 99 DT",
+   "quantity": 2,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "2 unités",
+   "lineAr": "زوز حبات"
+  },
+  {
+   "label": "Lot de 3 à 99 DT",
+   "quantity": 3,
+   "units": 3,
+   "fits": true,
+   "adds": true,
+   "lineFr": "3 unités · Lot de 3 à 99 DT",
+   "lineAr": "3 حبات · Lot de 3 à 99 DT"
+  },
+  {
+   "label": "Lot de 3 à 99 DT",
+   "quantity": 4,
+   "units": 3,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  },
+  {
+   "label": "la 2e à moitié prix",
+   "quantity": 1,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "1 unité",
+   "lineAr": "حبة وحدة"
+  },
+  {
+   "label": "la 2e à moitié prix",
+   "quantity": 2,
+   "units": 2,
+   "fits": true,
+   "adds": true,
+   "lineFr": "2 unités · la 2e à moitié prix",
+   "lineAr": "زوز حبات · la 2e à moitié prix"
+  },
+  {
+   "label": "la 2e à moitié prix",
+   "quantity": 3,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "3 unités",
+   "lineAr": "3 حبات"
+  },
+  {
+   "label": "la 2e à moitié prix",
+   "quantity": 4,
+   "units": 2,
+   "fits": false,
+   "adds": true,
+   "lineFr": "4 unités",
+   "lineAr": "4 حبات"
+  }
+ ],
+ "pricing": [
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 1
+    }
+   ],
+   "governorate": null,
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 49900,
+    "deliveryFee": 8000,
+    "total": 57900,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": 20000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 1,
+      "unitPrice": 49900,
+      "lineTotal": 49900,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 2
+    },
+    {
+     "productId": "p1",
+     "qty": 3
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 249500,
+    "deliveryFee": 8000,
+    "total": 257500,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 100000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 5,
+      "unitPrice": 49900,
+      "lineTotal": 249500,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 12
+    }
+   ],
+   "governorate": "Tunis",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 499000,
+    "deliveryFee": 8000,
+    "total": 507000,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 1,
+     "maxDays": 2,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 200000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 10,
+      "unitPrice": 49900,
+      "lineTotal": 499000,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "qty_reduced",
+      "available": 10
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 2
+    }
+   ],
+   "governorate": "Tunis",
+   "fee": 8000,
+   "threshold": 90000,
+   "expect": {
+    "subtotal": 99800,
+    "deliveryFee": 0,
+    "total": 99800,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 1,
+     "maxDays": 2,
+     "fee": 0,
+     "free": true
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 40000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 2,
+      "unitPrice": 49900,
+      "lineTotal": 99800,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 1
+    }
+   ],
+   "governorate": "Tozeur",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 49900,
+    "deliveryFee": 0,
+    "total": 49900,
+    "deliveryUnavailable": true,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": 20000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 1,
+      "unitPrice": 49900,
+      "lineTotal": 49900,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 0,
+   "threshold": null,
+   "expect": {
+    "subtotal": 49900,
+    "deliveryFee": 0,
+    "total": 49900,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 0,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 20000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 1,
+      "unitPrice": 49900,
+      "lineTotal": 49900,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "plain",
+   "lines": [
+    {
+     "productId": "nope",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "nope",
+      "variantId": null,
+      "kind": "not_found",
+      "available": null
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "tracked",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 5
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 149700,
+    "deliveryFee": 8000,
+    "total": 157700,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 60000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 3,
+      "unitPrice": 49900,
+      "lineTotal": 149700,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "qty_reduced",
+      "available": 3
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "tracked",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 2
+    },
+    {
+     "productId": "p1",
+     "offerId": null,
+     "variantId": null,
+     "qty": 2
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 149700,
+    "deliveryFee": 8000,
+    "total": 157700,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 60000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 3,
+      "unitPrice": 49900,
+      "lineTotal": 149700,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "qty_reduced",
+      "available": 3
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "offers",
+   "lines": [
+    {
+     "productId": "p1",
+     "offerId": "o2",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 89900,
+    "deliveryFee": 8000,
+    "total": 97900,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 40000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": "o2",
+      "qty": 2,
+      "unitPrice": 44950,
+      "lineTotal": 89900,
+      "offerLabel": "2 unités",
+      "offerLabelAr": "زوز حبات",
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "offers",
+   "lines": [
+    {
+     "productId": "p1",
+     "offerId": "o3",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 99800,
+    "deliveryFee": 0,
+    "total": 99800,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 0,
+     "free": true
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 60000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": "o3",
+      "qty": 3,
+      "unitPrice": 33267,
+      "lineTotal": 99800,
+      "offerLabel": "3 unités · Achetez 2, la 3e offerte",
+      "offerLabelAr": "3 حبات · اشري 2 والثالثة مجانا",
+      "freeDelivery": true
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "offers",
+   "lines": [
+    {
+     "productId": "p1",
+     "offerId": "old",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "offer_unavailable",
+      "available": null
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "offers",
+   "lines": [
+    {
+     "productId": "p1",
+     "offerId": "off",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "offer_unavailable",
+      "available": null
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "offers",
+   "lines": [
+    {
+     "productId": "p1",
+     "offerId": "o2",
+     "qty": 1
+    },
+    {
+     "productId": "p1",
+     "offerId": "o2",
+     "qty": 1
+    },
+    {
+     "productId": "p1",
+     "qty": 1
+    }
+   ],
+   "governorate": "Ariana",
+   "fee": 8000,
+   "threshold": 150000,
+   "expect": {
+    "subtotal": 139800,
+    "deliveryFee": 8000,
+    "total": 147800,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 1,
+     "maxDays": 2,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": 10200,
+    "costTotal": 60000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": "o2",
+      "qty": 2,
+      "unitPrice": 44950,
+      "lineTotal": 89900,
+      "offerLabel": "2 unités",
+      "offerLabelAr": "زوز حبات",
+      "freeDelivery": false
+     },
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 1,
+      "unitPrice": 49900,
+      "lineTotal": 49900,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "variants",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "variant_required",
+      "available": null
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "variants",
+   "lines": [
+    {
+     "productId": "p1",
+     "variantId": "v1",
+     "qty": 2
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 99800,
+    "deliveryFee": 8000,
+    "total": 107800,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 40000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": "v1",
+      "offerId": null,
+      "qty": 2,
+      "unitPrice": 49900,
+      "lineTotal": 99800,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "variants",
+   "lines": [
+    {
+     "productId": "p1",
+     "variantId": "v2",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 59900,
+    "deliveryFee": 8000,
+    "total": 67900,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 20000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": "v2",
+      "offerId": null,
+      "qty": 1,
+      "unitPrice": 59900,
+      "lineTotal": 59900,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "variants",
+   "lines": [
+    {
+     "productId": "p1",
+     "variantId": "v3",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": "v3",
+      "kind": "unavailable",
+      "available": null
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "variants",
+   "lines": [
+    {
+     "productId": "p1",
+     "variantId": "v2",
+     "offerId": "o2",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": "v2",
+      "kind": "offer_unavailable",
+      "available": null
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "variants",
+   "lines": [
+    {
+     "productId": "p1",
+     "variantId": "v1",
+     "offerId": "o2",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 89900,
+    "deliveryFee": 8000,
+    "total": 97900,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": 40000,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": "v1",
+      "offerId": "o2",
+      "qty": 2,
+      "unitPrice": 44950,
+      "lineTotal": 89900,
+      "offerLabel": "2 unités",
+      "offerLabelAr": "زوز حبات",
+      "freeDelivery": false
+     }
+    ],
+    "problems": []
+   }
+  },
+  {
+   "catalog": "two",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 1
+    },
+    {
+     "productId": "p2",
+     "qty": 3
+    }
+   ],
+   "governorate": "Gabès",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 289900,
+    "deliveryFee": 8000,
+    "total": 297900,
+    "deliveryUnavailable": false,
+    "delivery": {
+     "minDays": 2,
+     "maxDays": 3,
+     "fee": 8000,
+     "free": false
+    },
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "offerId": null,
+      "qty": 1,
+      "unitPrice": 49900,
+      "lineTotal": 49900,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     },
+     {
+      "productId": "p2",
+      "variantId": null,
+      "offerId": null,
+      "qty": 2,
+      "unitPrice": 120000,
+      "lineTotal": 240000,
+      "offerLabel": null,
+      "offerLabelAr": null,
+      "freeDelivery": false
+     }
+    ],
+    "problems": [
+     {
+      "productId": "p2",
+      "variantId": null,
+      "kind": "qty_reduced",
+      "available": 2
+     }
+    ]
+   }
+  },
+  {
+   "catalog": "inactive",
+   "lines": [
+    {
+     "productId": "p1",
+     "qty": 1
+    }
+   ],
+   "governorate": "Sfax",
+   "fee": 8000,
+   "threshold": null,
+   "expect": {
+    "subtotal": 0,
+    "deliveryFee": 0,
+    "total": 0,
+    "deliveryUnavailable": false,
+    "delivery": null,
+    "freeDeliveryRemaining": null,
+    "costTotal": null,
+    "lines": [],
+    "problems": [
+     {
+      "productId": "p1",
+      "variantId": null,
+      "kind": "not_found",
+      "available": null
+     }
+    ]
+   }
+  }
+ ]
+}

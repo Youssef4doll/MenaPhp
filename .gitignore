@@ -1,0 +1,6 @@
+/config.php
+/config.local.php
+/storage/
+/public/media/*
+!/public/media/.gitkeep
+.DS_Store

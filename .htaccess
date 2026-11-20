@@ -1,0 +1,13 @@
+# Used only when the host serves the whole project folder (it could not be
+# pointed at public/): everything is sent into public/, and the code, the
+# settings (config.php) and storage/ can never be downloaded.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(src|views|lang|storage|tests|vendor)(/|$) - [F,L]
+  RewriteRule ^(config\.php|config\.example\.php|README\.md|composer\.json|\.git.*)$ - [F,L]
+  RewriteCond %{REQUEST_URI} !^/public/
+  RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+<FilesMatch "^(config\.php|config\.example\.php)$">
+  Require all denied
+</FilesMatch>
