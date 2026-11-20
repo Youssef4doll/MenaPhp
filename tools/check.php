@@ -1,8 +1,8 @@
 <?php
 /**
- * Can this host run Mena's PHP shop on Neon? Upload this one file to the
- * host (with config.php beside the project, if you have it already), open
- * it in the browser, read the list. It changes nothing and shows no
+ * Can this host run Mena's PHP shop on Neon? Copy this one file into the
+ * site's public/ folder (or upload it alone to a new host), open it in the
+ * browser, read the list. It changes nothing and shows no
  * password, no key and no address of the database.
  *
  * Without config.php it can still test whether Neon is reachable: type the

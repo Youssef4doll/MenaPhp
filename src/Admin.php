@@ -10,6 +10,8 @@ final class Admin
 {
     public static function routes(Router $r): void
     {
+        // The back office always reads the database itself, never the shop's one-minute copy.
+        $GLOBALS['MENA_NO_CACHE'] = true;
         $r->get('/admin/connexion', [self::class, 'login']);
         $r->post('/admin/connexion', [self::class, 'login']);
         $r->post('/admin/deconnexion', [self::class, 'logout']);
@@ -43,6 +45,8 @@ final class Admin
     private static function guardPost(): array
     {
         $u = Auth::require();
+        // Once the change is written (the page ends with a redirect), the shop shows it at once.
+        register_shutdown_function([Cache::class, 'flush']);
         if (!Csrf::valid()) {
             self::flash('La page était trop ancienne : recommencez.', false);
             // Back to the same page: its path only, never a host from the request.

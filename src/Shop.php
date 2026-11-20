@@ -122,7 +122,7 @@ final class Shop
         }
         $now = Db::now();
         $offers = array_values(array_filter($p['offers'], static fn ($o) => Pricing::offerLive($o, $now) && $o['quantity'] >= 1));
-        $catalog = Catalog::forPricing([$p['id']]);
+        $catalog = Catalog::forDisplay([$p['id']]);
         $variants = $p['variants'];
         // The choice shown first: what was sent back, else the first offer, else one unit; the first option that can be sold.
         $variantId = $form['variantId'] ?? null;
@@ -158,7 +158,7 @@ final class Shop
     public static function cart(array $form = []): void
     {
         $lines = Cart::lines();
-        $catalog = Catalog::forPricing(array_column($lines, 'productId'));
+        $catalog = Catalog::forDisplay(array_column($lines, 'productId'));
         $quote = Pricing::quote($lines, $catalog, ($form['governorate'] ?? '') ?: null, Settings::get('delivery'));
         $notes = [];
         foreach ($quote['problems'] as $pb) {
@@ -191,7 +191,7 @@ final class Shop
         $do = post_str('do', 10);
         if ($do === 'add') {
             $pid = post_str('productId', 40);
-            $p = Catalog::forPricing([$pid])[$pid] ?? null;
+            $p = Catalog::forDisplay([$pid])[$pid] ?? null;
             if ($p && $p['active']) {
                 $vid = post_str('variantId', 40) ?: null;
                 $oid = post_str('offerId', 40) ?: null;
@@ -273,6 +273,13 @@ final class Shop
             'ipHash' => Tokens::hashIp(client_ip()),
         ]);
         if (!$result['ok']) {
+            // The page was shown from an outdated copy (a price, an offer or stock changed meanwhile, e.g. in the
+            // other back office): the copy goes, and the customer now sees the real figures to confirm again.
+            if (in_array($result['error'], ['price_changed', 'cart_changed', 'empty', 'delivery_unavailable'], true)) {
+                Cache::flush();
+                $GLOBALS['MENA_NO_CACHE'] = true;
+                Settings::forget();
+            }
             if ($result['error'] === 'price_changed' && isset($result['quote'])) {
                 $form['shownTotal'] = $result['quote']['total'];
             }
@@ -359,7 +366,7 @@ final class Shop
     public static function info(string $page): void
     {
         $titles = ['livraison-retours' => t('footer.deliveryReturns'), 'contact' => t('footer.contact'), 'conditions' => t('footer.terms'), 'confidentialite' => t('footer.privacy')];
-        $freeOffers = (bool) Db::value('SELECT 1 FROM "ProductOffer" o JOIN "Product" p ON p.id = o."productId" WHERE o.active = true AND o."freeDelivery" = true AND p.active = true AND (o."endsAt" IS NULL OR o."endsAt" > ?) LIMIT 1', [Db::now()]);
+        $freeOffers = Cache::remember('freeOffers', static fn () => (bool) Db::value('SELECT 1 FROM "ProductOffer" o JOIN "Product" p ON p.id = o."productId" WHERE o.active = true AND o."freeDelivery" = true AND p.active = true AND (o."endsAt" IS NULL OR o."endsAt" > ?) LIMIT 1', [Db::now()]));
         self::page('shop/info/' . $page, ['s' => Settings::all(), 'freeOffers' => $freeOffers, 'heading' => $titles[$page]], $titles[$page] . ' · ' . Settings::get('shop.name'), null, url('/' . $page));
     }
 
@@ -372,13 +379,16 @@ final class Shop
     public static function sitemap(): void
     {
         header('Content-Type: application/xml; charset=utf-8');
-        $urls = ['/', '/boutique', '/livraison-retours', '/contact', '/conditions', '/confidentialite'];
-        foreach (Db::all('SELECT slug FROM "Category" WHERE active = true ORDER BY sort') as $c) {
-            $urls[] = '/categorie/' . rawurlencode($c['slug']);
-        }
-        foreach (Db::all('SELECT slug FROM "Product" WHERE active = true ORDER BY "createdAt" DESC LIMIT 5000') as $p) {
-            $urls[] = '/produit/' . rawurlencode($p['slug']);
-        }
+        $urls = Cache::remember('sitemap', static function () {
+            $urls = ['/', '/boutique', '/livraison-retours', '/contact', '/conditions', '/confidentialite'];
+            foreach (Db::all('SELECT slug FROM "Category" WHERE active = true ORDER BY sort') as $c) {
+                $urls[] = '/categorie/' . rawurlencode($c['slug']);
+            }
+            foreach (Db::all('SELECT slug FROM "Product" WHERE active = true ORDER BY "createdAt" DESC LIMIT 5000') as $p) {
+                $urls[] = '/produit/' . rawurlencode($p['slug']);
+            }
+            return $urls;
+        }, 3600);
         echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
         foreach ($urls as $u) {
             $fr = e(absolute_url($u));

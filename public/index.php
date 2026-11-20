@@ -3,10 +3,17 @@ declare(strict_types=1);
 
 /** Every address that is not a file (pictures already made, CSS, JS) arrives here. */
 require dirname(__DIR__) . '/src/bootstrap.php';
+// The whole page is kept until it is complete: it can then be sent with its length, and work done after it
+// (Cache::refresh) never makes the visitor wait.
+ob_start();
 
 $path = rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
 $path = $path !== '/' ? rtrim($path, '/') : '/';
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+if (config('env', 'production') !== 'production') {
+    // Outside production: how many database queries each page needed (storage/queries.log).
+    register_shutdown_function(static fn () => @file_put_contents(ROOT . '/storage/queries.log', sprintf("%s %s %d\n", $method, $path, Db::$count), FILE_APPEND));
+}
 
 try {
     // Pictures: made on their first request, then served as files by the web server.

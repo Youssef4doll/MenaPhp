@@ -18,6 +18,10 @@ return [
     // The shop's address, without a slash at the end.
     'site_url' => 'https://menatn.com',
 
+    // Keep the database connection open between visitors (faster when the
+    // database is far away). Set to false only if the host has trouble with it.
+    'persistent' => true,
+
     // 'production' on the real shop: errors are logged, never shown.
     'env' => 'production',
 ];

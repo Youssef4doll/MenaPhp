@@ -13,6 +13,8 @@ declare(strict_types=1);
  */
 
 $GLOBALS['MENA_TESTING'] = true;
+// The tests read the database itself, never the pages' one-minute copy.
+$GLOBALS['MENA_NO_CACHE'] = true;
 require dirname(__DIR__) . '/src/bootstrap.php';
 
 $failed = 0;
@@ -76,6 +78,36 @@ foreach ($fx['pricing'] as $i => $c) {
     same("$tag lines", array_map(static fn ($l) => ['productId' => $l['productId'], 'variantId' => $l['variantId'], 'offerId' => $l['offerId'], 'qty' => $l['qty'], 'unitPrice' => $l['unitPrice'], 'lineTotal' => $l['lineTotal'], 'offerLabel' => $l['offerLabel'], 'offerLabelAr' => $l['offerLabelAr'], 'freeDelivery' => $l['freeDelivery']], $q['lines']), $e['lines']);
     same("$tag problems", array_map(static fn ($p) => ['productId' => $p['productId'], 'variantId' => $p['variantId'], 'kind' => $p['kind'], 'available' => $p['available'] ?? null], $q['problems']), array_map(static fn ($p) => $p + ['available' => null], $e['problems']));
 }
+
+// Every word with a value, in both languages, without a single PHP warning (an Arabic letter right after
+// "$name" in a string becomes part of the name: the text then loses its value).
+set_error_handler(static function (int $no, string $msg) { throw new ErrorException($msg, 0, $no); });
+foreach (['fr', 'ar'] as $l) {
+    $GLOBALS['MENA_LANG'] = $l;
+    $made = 0;
+    $walk = static function ($node, string $path) use (&$walk, &$made, $l) {
+        if (is_array($node)) {
+            foreach ($node as $k => $v) {
+                $walk($v, $path === '' ? (string) $k : "$path.$k");
+            }
+            return;
+        }
+        if (!$node instanceof Closure) {
+            return;
+        }
+        $args = array_map(static fn ($p) => ($p->getType()?->getName() === 'int') ? 3 : 'VALUE', (new ReflectionFunction($node))->getParameters());
+        try {
+            $text = (string) $node(...$args);
+            check("text $l $path shows its values", !in_array('VALUE', $args, true) || str_contains($text, 'VALUE'), $text);
+            $made++;
+        } catch (Throwable $e) {
+            check("text $l $path", false, $e->getMessage());
+        }
+    };
+    $walk(Lang::dict($l), '');
+    check("texts $l found", $made > 20, "$made");
+}
+restore_error_handler();
 
 $GLOBALS['MENA_LANG'] = 'fr';
 same('range fr', Settings::rangeLabel(1, 2, 'fr'), '1 à 2 jours ouvrés');

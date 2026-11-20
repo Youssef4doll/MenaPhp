@@ -18,6 +18,8 @@ declare(strict_types=1);
 final class Db
 {
     private static ?PDO $pdo = null;
+    /** Queries sent during this request (shown in an X-Queries header outside production). */
+    public static int $count = 0;
 
     /** The parts of DATABASE_URL a PDO connection needs. */
     public static function parseUrl(string $url): array
@@ -74,6 +76,9 @@ final class Db
             // Neon's pooled address shares server connections: prepared statements live per query only.
             PDO::ATTR_EMULATE_PREPARES => true,
             PDO::ATTR_TIMEOUT => 10,
+            // The database may be far away: opening a connection costs several round trips. One kept open by
+            // the host's PHP worker is reused by the next visitor (config 'persistent' => false turns it off).
+            PDO::ATTR_PERSISTENT => (bool) config('persistent', true),
         ];
         try {
             return new PDO(self::dsn($c), $c['user'], $c['pass'], $opts);
@@ -110,9 +115,29 @@ final class Db
 
     public static function run(string $sql, array $params = []): PDOStatement
     {
-        $st = self::pdo()->prepare($sql);
-        $st->execute(self::params($params));
-        return $st;
+        self::$count++;
+        try {
+            $st = self::pdo()->prepare($sql);
+            $st->execute(self::params($params));
+            return $st;
+        } catch (PDOException $e) {
+            // A connection kept open may have been closed by the database meanwhile: open a new one, once.
+            // Never inside a transaction, whose earlier work would be lost.
+            if (self::$pdo === null || self::$pdo->inTransaction() || !self::dropped($e)) {
+                throw $e;
+            }
+            self::$pdo = null;
+            $st = self::pdo()->prepare($sql);
+            $st->execute(self::params($params));
+            return $st;
+        }
+    }
+
+    /** True when the error says the connection itself is gone (not a mistake in the query). */
+    private static function dropped(PDOException $e): bool
+    {
+        $state = (string) ($e->errorInfo[0] ?? $e->getCode());
+        return str_starts_with($state, '08') || $state === '57P01' || $state === 'HY000' && (bool) preg_match('/server closed|no connection|SSL|terminat|broken pipe|EOF/i', $e->getMessage());
     }
 
     public static function all(string $sql, array $params = []): array

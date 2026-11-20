@@ -39,13 +39,15 @@ final class Settings
         if (self::$cache !== null) {
             return self::$cache;
         }
-        $stored = [];
-        try {
-            $v = Db::value('SELECT value FROM "Setting" WHERE key = ?', ['settings']);
-            $stored = is_string($v) ? (json_decode($v, true) ?: []) : [];
-        } catch (Throwable $e) {
-            error_log('[settings] ' . $e->getMessage());
-        }
+        $stored = Cache::remember('settings', static function () {
+            try {
+                $v = Db::value('SELECT value FROM "Setting" WHERE key = ?', ['settings']);
+                return is_string($v) ? (json_decode($v, true) ?: []) : [];
+            } catch (Throwable $e) {
+                error_log('[settings] ' . $e->getMessage());
+                return [];
+            }
+        });
         return self::$cache = self::merge($stored);
     }
 
@@ -105,6 +107,7 @@ final class Settings
             }
         });
         self::$cache = null;
+        Cache::flush();
     }
 
     /** "1 à 2 jours ouvrés" / "خلال 1 إلى 2 أيام عمل" (deliveryRangeLabel). A range, never a promised date. */

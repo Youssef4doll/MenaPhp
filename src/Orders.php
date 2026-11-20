@@ -124,9 +124,10 @@ final class Orders
         $deliveryQuote = Settings::rangeLabel($quote['delivery']['minDays'], $quote['delivery']['maxDays'], 'fr');
         $productIds = array_values(array_unique(array_column($quote['lines'], 'productId')));
         $now = Db::now();
+        $tookStock = false;
 
         try {
-            $ref = Db::tx(static function () use ($in, $phone, $name, $address, $gov, $quote, $settings, $salt, $token, $deliveryQuote, $productIds, $now, $submitKey) {
+            $ref = Db::tx(static function () use ($in, $phone, $name, $address, $gov, $quote, $settings, $salt, $token, $deliveryQuote, $productIds, $now, $submitKey, &$tookStock) {
                 // Serializable, as the Next.js shop: two orders for the last unit cannot both pass.
                 Db::run('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
                 $customer = Db::one('SELECT id, blacklisted FROM "Customer" WHERE phone = ?', [$phone]);
@@ -159,6 +160,7 @@ final class Orders
                     if ($n === 0) {
                         throw new StockGone();
                     }
+                    $tookStock = true;
                 }
 
                 $orderId = new_id();
@@ -210,6 +212,10 @@ final class Orders
             }
             error_log('[order] placement failed: ' . $e->getMessage());
             return ['ok' => false, 'error' => 'server'];
+        }
+        // Counted stock changed: pages show it again from the database.
+        if ($tookStock) {
+            Cache::flush();
         }
         return ['ok' => true, 'ref' => $ref, 'token' => $token];
     }
@@ -291,6 +297,9 @@ final class Orders
             }
             return true;
         });
+        if ($ok && $restock) {
+            Cache::flush();
+        }
         return $ok ? 'ok' : 'conflict';
     }
 }

@@ -34,6 +34,6 @@ if (!is_dir(ROOT . '/storage')) {
 }
 ini_set('error_log', ROOT . '/storage/php-errors.log');
 
-foreach (['helpers', 'Db', 'Lang', 'Money', 'Phone', 'Gov', 'Tokens', 'Settings', 'OfferLabel', 'Catalog', 'Pricing', 'RateLimit', 'Csrf', 'Cart', 'Orders', 'Auth', 'Media', 'Router', 'View', 'Shop', 'Admin'] as $file) {
+foreach (['helpers', 'Db', 'Lang', 'Money', 'Phone', 'Gov', 'Tokens', 'Cache', 'Settings', 'OfferLabel', 'Catalog', 'Pricing', 'RateLimit', 'Csrf', 'Cart', 'Orders', 'Auth', 'Media', 'Router', 'View', 'Shop', 'Admin'] as $file) {
     require __DIR__ . "/$file.php";
 }
