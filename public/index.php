@@ -37,6 +37,12 @@ try {
     if ($path === '/admin' || str_starts_with($path, '/admin/')) {
         View::securityHeaders(true);
         $GLOBALS['MENA_LANG'] = 'fr';
+        // The back office always reads the database itself, never the shop's one-minute copy.
+        $GLOBALS['MENA_NO_CACHE'] = true;
+        // The pages ported from the Next.js back office (src/admin); the others are still Admin.php's.
+        if (AdminApp::handle($method, $path)) {
+            exit;
+        }
         Admin::routes($router);
         $router->dispatch($method, $path);
         exit;

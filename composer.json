@@ -1,0 +1,17 @@
+{
+    "name": "mena/shop-php",
+    "description": "Mena, the shop and its back office, in PHP (the same database as the Next.js shop).",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "anthropic-ai/sdk": "^1.12",
+        "guzzlehttp/guzzle": "^7.9"
+    },
+    "config": {
+        "platform": { "php": "8.2.0" },
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": { "php-http/discovery": false }
+    }
+}

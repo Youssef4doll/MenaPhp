@@ -37,3 +37,25 @@ ini_set('error_log', ROOT . '/storage/php-errors.log');
 foreach (['helpers', 'Db', 'Lang', 'Money', 'Phone', 'Gov', 'Tokens', 'Cache', 'Settings', 'OfferLabel', 'Search', 'Rules', 'ui/Icons', 'ui/Ui', 'ui/ProductUi', 'ui/PageUi', 'Seo', 'Api', 'Events', 'Notify', 'Catalog', 'Pricing', 'RateLimit', 'Csrf', 'Cart', 'Orders', 'Auth', 'Media', 'Router', 'View', 'Shop', 'Admin'] as $file) {
     require __DIR__ . "/$file.php";
 }
+
+/**
+ * The back office ported from Next.js (src/admin): loaded only when a request needs it, so the
+ * shop's pages never read it. Class => file.
+ */
+spl_autoload_register(static function (string $class): void {
+    static $map = [
+        'Text' => 'Text', 'Z' => 'Z', 'ZIssue' => 'Z', 'Dates' => 'Dates', 'WebUrl' => 'WebUrl',
+        'ProductWrite' => 'ProductWrite', 'ProductConflict' => 'ProductWrite',
+        'AdminApp' => 'AdminApp', 'AdminNotFound' => 'AdminApp', 'AdminPages' => 'AdminPages', 'AdminRoutes' => 'AdminRoutes',
+        'Actions' => 'Actions', 'FormDataIn' => 'Actions', 'ActionRedirect' => 'Actions', 'Refresh' => 'Actions', 'LoginActions' => 'Actions',
+        'ProductImages' => 'ProductImages', 'ImageRefused' => 'ProductImages',
+        'ProductActions' => 'ProductActions', 'ListActions' => 'ProductActions',
+        'ProductCsv' => 'ProductCsv', 'ProductImport' => 'ProductImport',
+        'SupplierActions' => 'CompleteActions', 'CompleteActions' => 'CompleteActions', 'TranslateActions' => 'CompleteActions', 'ImportActions' => 'CompleteActions',
+        'Ai' => 'Ai', 'AiPrompts' => 'Ai', 'AiError' => 'Ai', 'Translate' => 'Translate', 'ImageIdeas' => 'ImageIdeas', 'SupplierAi' => 'SupplierAi',
+        'WebComplete' => 'WebComplete', 'WebProduct' => 'WebProduct', 'CategoryAr' => 'CategoryAr', 'ProductQuality' => 'ProductQuality',
+    ];
+    if (isset($map[$class])) {
+        require __DIR__ . '/admin/' . $map[$class] . '.php';
+    }
+});

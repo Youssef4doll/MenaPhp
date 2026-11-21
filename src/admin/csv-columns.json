@@ -1,0 +1,187 @@
+[
+ {
+  "key": "name",
+  "header": "nom",
+  "example": "Lampe de chevet tactile LED rechargeable"
+ },
+ {
+  "key": "nameAr",
+  "header": "nom_ar",
+  "example": "لمبة سرير باللمس"
+ },
+ {
+  "key": "price",
+  "header": "prix",
+  "example": "59,900"
+ },
+ {
+  "key": "compareAt",
+  "header": "ancien_prix",
+  "example": ""
+ },
+ {
+  "key": "cost",
+  "header": "cout",
+  "example": "32,000"
+ },
+ {
+  "key": "category",
+  "header": "categorie",
+  "example": "Maison"
+ },
+ {
+  "key": "categoryAr",
+  "header": "categorie_ar",
+  "example": "الدار"
+ },
+ {
+  "key": "photos",
+  "header": "photos",
+  "example": "https://exemple.com/lampe-1.jpg ; https://exemple.com/lampe-2.jpg"
+ },
+ {
+  "key": "detailPhotos",
+  "header": "images_description",
+  "example": ""
+ },
+ {
+  "key": "summary",
+  "header": "resume",
+  "example": "Lumière douce, trois intensités, se recharge en USB-C."
+ },
+ {
+  "key": "summaryAr",
+  "header": "resume_ar",
+  "example": ""
+ },
+ {
+  "key": "description",
+  "header": "description",
+  "example": "Une lampe qui s'allume d'un simple toucher."
+ },
+ {
+  "key": "descriptionAr",
+  "header": "description_ar",
+  "example": ""
+ },
+ {
+  "key": "specs",
+  "header": "caracteristiques",
+  "example": "Matière : plastique ; Autonomie : 8 heures"
+ },
+ {
+  "key": "specsAr",
+  "header": "caracteristiques_ar",
+  "example": ""
+ },
+ {
+  "key": "keywords",
+  "header": "mots_cles",
+  "example": "veilleuse, lampe de nuit, lamba"
+ },
+ {
+  "key": "variants",
+  "header": "variantes",
+  "example": "Noir ; Blanc"
+ },
+ {
+  "key": "variantsAr",
+  "header": "variantes_ar",
+  "example": "أكحل ; أبيض"
+ },
+ {
+  "key": "variantColors",
+  "header": "variantes_couleurs",
+  "example": "#1f2937 ; #ffffff"
+ },
+ {
+  "key": "variantPrices",
+  "header": "variantes_prix",
+  "example": ""
+ },
+ {
+  "key": "variantStock",
+  "header": "variantes_stock",
+  "example": ""
+ },
+ {
+  "key": "offers",
+  "header": "offres",
+  "example": "1 = 59,900 ; 3 = 119,800 livraison offerte"
+ },
+ {
+  "key": "offerLabels",
+  "header": "offres_noms",
+  "example": "1 unité ; Achetez 2, la 3e offerte"
+ },
+ {
+  "key": "offerLabelsAr",
+  "header": "offres_noms_ar",
+  "example": "حبة وحدة ; اشري 2 والثالثة هدية"
+ },
+ {
+  "key": "stock",
+  "header": "stock",
+  "example": "fournisseur"
+ },
+ {
+  "key": "available",
+  "header": "disponible",
+  "example": "oui"
+ },
+ {
+  "key": "active",
+  "header": "en_ligne",
+  "example": "non"
+ },
+ {
+  "key": "featured",
+  "header": "selection",
+  "example": "non"
+ },
+ {
+  "key": "supplier",
+  "header": "fournisseur",
+  "example": ""
+ },
+ {
+  "key": "supplierRef",
+  "header": "ref_fournisseur",
+  "example": ""
+ },
+ {
+  "key": "supplierUrl",
+  "header": "lien_fournisseur",
+  "example": ""
+ },
+ {
+  "key": "videoUrl",
+  "header": "video",
+  "example": ""
+ },
+ {
+  "key": "slug",
+  "header": "adresse",
+  "example": ""
+ },
+ {
+  "key": "seoTitle",
+  "header": "titre_google",
+  "example": ""
+ },
+ {
+  "key": "seoTitleAr",
+  "header": "titre_google_ar",
+  "example": ""
+ },
+ {
+  "key": "seoDescription",
+  "header": "description_google",
+  "example": ""
+ },
+ {
+  "key": "seoDescriptionAr",
+  "header": "description_google_ar",
+  "example": ""
+ }
+]

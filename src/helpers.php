@@ -233,3 +233,19 @@ function after_response(callable $task): void
     }
     $tasks[] = $task;
 }
+
+/**
+ * A write from the back office's own pages: the browser always sends Origin on a POST, and it must
+ * name this site (lib/admin-api.ts refuseUnlessAdmin). Anything else is refused.
+ */
+function same_origin_request(): bool
+{
+    $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($origin === '') {
+        return false;
+    }
+    $host = parse_url($origin, PHP_URL_HOST);
+    $port = parse_url($origin, PHP_URL_PORT);
+    $named = $host === null ? null : $host . ($port ? ":$port" : '');
+    return $named !== null && ($named === ($_SERVER['HTTP_HOST'] ?? '') || $named === ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? null));
+}

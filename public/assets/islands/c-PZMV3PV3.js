@@ -1,0 +1,1 @@
+function a(e){let n=e.trim().match(/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i);return n?`#${(n[1].length===3?[...n[1]].map(r=>r+r).join(""):n[1]).toLowerCase()}`:null}function l(e){let n=a(e);if(!n)return!1;let[s,r,i]=[1,3,5].map(t=>parseInt(n.slice(t,t+2),16)/255),o=t=>t<=.03928?t/12.92:((t+.055)/1.055)**2.4;return .2126*o(s)+.7152*o(r)+.0722*o(i)>.8}export{a,l as b};

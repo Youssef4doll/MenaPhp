@@ -22,6 +22,9 @@ final class RateLimit
         'review' => [10, 3600],
     ];
 
+    /** Seconds until the window of the last refused hit ends (for "Réessayez dans N min"). */
+    public static int $retryAfter = 0;
+
     /** True when this hit is allowed. */
     public static function hit(string $kind, string $who): bool
     {
@@ -47,6 +50,7 @@ final class RateLimit
             ftruncate($fh, 0);
             rewind($fh);
             fwrite($fh, json_encode($w));
+            self::$retryAfter = max(0, $w['reset'] - $now);
             return $w['count'] <= $limit;
         } finally {
             flock($fh, LOCK_UN);

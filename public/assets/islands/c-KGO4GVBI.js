@@ -1,0 +1,1 @@
+import{b as n}from"./c-WWUI4JVW.js";var o=()=>location.pathname==="/admin"||location.pathname.startsWith("/admin/");function e(){return{push:r=>location.assign(r),replace:r=>location.replace(r),refresh:()=>o()?void n():location.reload(),back:()=>history.back(),forward:()=>history.forward(),prefetch:()=>{}}}function a(){return location.pathname}export{e as a,a as b};

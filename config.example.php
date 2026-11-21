@@ -22,6 +22,13 @@ return [
     // database is far away). Set to false only if the host has trouble with it.
     'persistent' => true,
 
+    // The back office's AI (translation, product pages written from a supplier's page, the
+    // search for a product's pictures on the web, picture ideas): the same key as
+    // ANTHROPIC_API_KEY on Netlify/Vercel, from console.anthropic.com → API keys. Empty: the
+    // back office works without it and offers the free way (copy the request into claude.ai,
+    // paste the answer back). Type it here, on the host; never send it in a chat.
+    'anthropic_api_key' => '',
+
     // 'production' on the real shop: errors are logged, never shown.
     'env' => 'production',
 ];

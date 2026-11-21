@@ -4,3 +4,4 @@
 /public/media/*
 !/public/media/.gitkeep
 .DS_Store
+/public/uploads/
