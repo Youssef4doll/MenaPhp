@@ -340,4 +340,96 @@ final class Rules
         usort($scored, static fn ($a, $b) => $b['s'] <=> $a['s'] ?: $b['i']['createdAt'] <=> $a['i']['createdAt']);
         return self::diversify(array_map(static fn ($x) => $x['i'], $scored));
     }
+
+    // ---------------------------------------------------------------- description.ts
+
+    /** The facts of a line joined by dashes, or null for an ordinary line. */
+    private static function joinedFacts(string $line): ?array
+    {
+        $parts = array_map('trim', preg_split('/\s+[-–]\s+/u', $line) ?: []);
+        if (count($parts) < 3) {
+            return null;
+        }
+        foreach ($parts as $x) {
+            if (mb_strlen($x) < 3 || !preg_match('/\p{L}|\d/u', $x)) {
+                return null;
+            }
+        }
+        return $parts;
+    }
+
+    /** Paragraphs, and lines starting with "- " (or "•", "✓", "1.") as lists with ticks. */
+    public static function descriptionBlocks(string $text): array
+    {
+        $bullet = '/^\s*(?:[-•*✓✔]|\d+[.)])\s+/u';
+        $out = [];
+        foreach (preg_split('/\n{2,}/', (string) preg_replace('/\r\n?/', "\n", $text)) ?: [] as $para) {
+            $lines = [];
+            $items = [];
+            foreach (explode("\n", $para) as $raw) {
+                $line = trim($raw);
+                if ($line === '') {
+                    continue;
+                }
+                $facts = preg_match($bullet, $line) ? null : self::joinedFacts($line);
+                if ($facts) {
+                    if ($lines) {
+                        $out[] = ['kind' => 'text', 'text' => implode("\n", $lines)];
+                        $lines = [];
+                    }
+                    array_push($items, ...$facts);
+                    continue;
+                }
+                if (preg_match($bullet, $line)) {
+                    if ($lines) {
+                        $out[] = ['kind' => 'text', 'text' => implode("\n", $lines)];
+                        $lines = [];
+                    }
+                    $items[] = (string) preg_replace($bullet, '', $line);
+                } else {
+                    if ($items) {
+                        $out[] = ['kind' => 'list', 'items' => $items];
+                        $items = [];
+                    }
+                    $lines[] = $line;
+                }
+            }
+            if ($lines) {
+                $out[] = ['kind' => 'text', 'text' => implode("\n", $lines)];
+            }
+            if ($items) {
+                $out[] = ['kind' => 'list', 'items' => $items];
+            }
+        }
+        return $out;
+    }
+
+    // ---------------------------------------------------------------------- color.ts
+
+    public static function readHex(string $s): ?string
+    {
+        if (!preg_match('/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i', trim($s), $m)) {
+            return null;
+        }
+        $h = strlen($m[1]) === 3 ? implode('', array_map(static fn ($c) => $c . $c, str_split($m[1]))) : $m[1];
+        return '#' . strtolower($h);
+    }
+
+    /** A colour so light that its dot needs a darker ring to be seen on white. */
+    public static function isPale(string $hex): bool
+    {
+        $h = self::readHex($hex);
+        if (!$h) {
+            return false;
+        }
+        $lin = static fn ($c) => $c <= 0.03928 ? $c / 12.92 : (($c + 0.055) / 1.055) ** 2.4;
+        [$r, $g, $b] = array_map(static fn ($i) => hexdec(substr($h, $i, 2)) / 255, [1, 3, 5]);
+        return 0.2126 * $lin($r) + 0.7152 * $lin($g) + 0.0722 * $lin($b) > 0.8;
+    }
+
+    /** "1 à 2 jours ouvrés" / "خلال 1 إلى 2 أيام عمل" (deliveryRangeLabel). */
+    public static function rangeLabel(int $minDays, int $maxDays, string $locale): string
+    {
+        return Settings::rangeLabel($minDays, $maxDays, $locale);
+    }
 }

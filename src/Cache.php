@@ -105,27 +105,7 @@ final class Cache
         if (!$jobs) {
             return;
         }
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_write_close();
-        }
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } elseif (function_exists('litespeed_finish_request')) {
-            litespeed_finish_request();
-        } else {
-            // Other servers (Apache module, PHP's own): the page is sent now with its length, so the browser
-            // has all of it and does not wait for the connection to close.
-            $out = '';
-            while (ob_get_level() > 0) {
-                $out = (string) ob_get_clean() . $out;
-            }
-            if (!headers_sent()) {
-                header('Content-Length: ' . strlen($out));
-                header('Connection: close');
-            }
-            echo $out;
-            @flush();
-        }
+        finish_response();
         ignore_user_abort(true);
         foreach ($jobs as [$file, $make, $ttl]) {
             $lock = "$file.lock";

@@ -46,6 +46,9 @@ $wa = Ui::waFloat();
 <meta property="og:image" content="<?= e($base . $img) ?>">
 <?php endforeach ?>
 <meta property="og:type" content="<?= e($og['type'] ?? 'website') ?>">
+<?php foreach ($meta ?? [] as $k => $v) : ?>
+<meta property="<?= e($k) ?>" content="<?= e($v) ?>">
+<?php endforeach ?>
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/assets/icon.svg" sizes="any" type="image/svg+xml">
@@ -53,14 +56,17 @@ $wa = Ui::waFloat();
 <?php foreach ($jsonLd ?? [] as $ld) : ?>
 <script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
 <?php endforeach ?>
+<?php if (str_contains($content, 'data-island=')) : ?>
+<link rel="modulepreload" href="<?= e(asset('/assets/islands/islands.js')) ?>">
+<?php endif ?>
 <script src="<?= e(asset('/assets/shop.js')) ?>" defer></script>
 </head>
-<body class="min-h-dvh" data-lang="<?= $l ?>" data-base="<?= $l === 'ar' ? '/ar' : '' ?>">
+<body class="min-h-dvh" data-lang="<?= $l ?>" data-base="<?= $l === 'ar' ? '/ar' : '' ?>" data-site="<?= e($base) ?>">
 <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-[16px] focus:font-bold focus:text-white"><?= e(t('nav.skip')) ?></a>
 <?= $header ?>
 <main id="main" tabindex="-1" class="outline-none"><?= $content ?></main>
 <?= $footer ?>
 <?= $wa ?>
-<script type="application/json" id="mena-texts"><?= json_encode(Ui::clientTexts(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
+<script type="application/json" id="mena-texts" data-islands="<?= e(asset('/assets/islands/islands.js')) ?>"><?= json_encode(Ui::clientTexts(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
 </body>
 </html>

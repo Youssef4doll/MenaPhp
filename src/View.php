@@ -32,16 +32,16 @@ final class View
         return $d->setTimezone(new DateTimeZone('Africa/Tunis'))->format($format);
     }
 
-    /** Headers sent with every page. */
+    /** Headers sent with every page: the Next.js shop's (next.config.ts securityHeaders). */
     public static function securityHeaders(bool $admin = false): void
     {
         header('X-Content-Type-Options: nosniff');
         header('Referrer-Policy: strict-origin-when-cross-origin');
         header('X-Frame-Options: DENY');
-        header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
-        header("Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; frame-src https://www.youtube-nocookie.com https://www.youtube.com; media-src 'self' https:; form-action 'self'; frame-ancestors 'none'; base-uri 'self'");
+        header('Permissions-Policy: camera=(), microphone=(), geolocation=(), usb=(), interest-cohort=()');
+        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://analytics.tiktok.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' blob: https:; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://www.tiktok.com https://www.instagram.com https://www.facebook.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" . (is_https() ? '; upgrade-insecure-requests' : ''));
         if (is_https()) {
-            header('Strict-Transport-Security: max-age=63072000; includeSubDomains');
+            header('Strict-Transport-Security: max-age=63072000; includeSubDomains; preload');
         }
         if ($admin) {
             header('X-Robots-Tag: noindex, nofollow');

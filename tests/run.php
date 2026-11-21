@@ -241,7 +241,12 @@ if ($url === '') {
             Orders::transition($oid, 'CANCELLED', 'test');
             same('stock: back after cancel', (int) Db::value('SELECT "stockQty" FROM "Product" WHERE id = ?', [$t['id']]), (int) $t['stockQty']);
         }
-        same('order: invalid fields named', Orders::place(['name' => '', 'phone' => '123', 'governorate' => 'Paris', 'address' => '', 'lines' => $line, 'expectedTotal' => 0])['fields'] ?? null, ['name', 'phone', 'governorate', 'address']);
+        // As the Next.js shop: the form's schema names name and address; placing names phone and governorate.
+        [$in, $bad] = Orders::validate(['name' => '', 'phone' => '123', 'governorate' => 'Paris', 'address' => '', 'lines' => $line, 'expectedTotal' => 0, 'payment' => 'COD']);
+        same('order: invalid fields named by the form check', $bad, ['name', 'address']);
+        same('order: invalid fields named by placing', Orders::place(['name' => 'Ok Name', 'phone' => '123', 'governorate' => 'Paris', 'address' => 'Rue 1, Sfax', 'lines' => $line, 'expectedTotal' => 0])['fields'] ?? null, ['phone', 'governorate']);
+        [, $bad] = Orders::validate(['name' => 'Ok', 'phone' => '22123456', 'governorate' => 'Sfax', 'address' => 'Rue 1', 'lines' => [['productId' => 'x', 'qty' => 11]], 'expectedTotal' => -1, 'payment' => 'CASH', 'locale' => 'en']);
+        same('order: schema refusals', $bad, ['lines', 'payment', 'expectedTotal', 'locale']);
     }
 }
 

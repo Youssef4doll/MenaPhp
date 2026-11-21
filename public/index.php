@@ -20,9 +20,11 @@ try {
     if (preg_match('#^/media/([a-z0-9]+)/(\d+)\.(webp|jpg)$#', $path, $m)) {
         Media::serve($m[1], (int) $m[2], $m[3]);
     }
-    // The Next.js shop's picture addresses (posts, ads, Canva) keep working.
+    // The Next.js shop's picture addresses (its components, posts, ads, Canva): the same picture, from the
+    // same file (public/.htaccess sends a made one straight to the file, without PHP).
     if (preg_match('#^/api/img/([a-z0-9]+)/(\d+)$#', $path, $m)) {
-        redirect(Media::url($m[1], (int) $m[2]), 301);
+        $w = (int) $m[2];
+        Media::serve($m[1], $w, Media::ext());
     }
 
     $router = new Router();

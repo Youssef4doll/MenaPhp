@@ -71,52 +71,160 @@ final class Orders
     }
 
     /**
-     * @param array $in name, phone, governorate, address, lines, expectedTotal, submitKey, locale, source, campaign
+     * placeOrderSchema: the order form's fields, checked as the Next.js shop checks them. Returns
+     * [clean input, list of bad fields]. Where the visit came from is cut, never a reason to refuse.
+     */
+    public static function validate(array $in): array
+    {
+        $bad = [];
+        $str = static function (string $k, int $max, bool $required = false, int $min = 0) use ($in, &$bad): ?string {
+            $v = $in[$k] ?? null;
+            if ($v === null) {
+                if ($required) {
+                    $bad[] = $k;
+                }
+                return null;
+            }
+            if (!is_string($v)) {
+                $bad[] = $k;
+                return null;
+            }
+            $v = trim($v);
+            if (mb_strlen($v) > $max || mb_strlen($v) < $min) {
+                $bad[] = $k;
+            }
+            return $v;
+        };
+        $cut = static fn ($v, int $max) => is_string($v) ? mb_substr(trim($v), 0, $max) : null;
+        $lines = $in['lines'] ?? null;
+        $clean = [];
+        if (!is_array($lines) || !$lines || count($lines) > 30) {
+            $bad[] = 'lines';
+        } else {
+            foreach ($lines as $l) {
+                $ok = is_array($l) && is_string($l['productId'] ?? null) && $l['productId'] !== '' && strlen($l['productId']) <= 40
+                    && (!isset($l['variantId']) || (is_string($l['variantId']) && strlen($l['variantId']) <= 40))
+                    && (!isset($l['offerId']) || (is_string($l['offerId']) && strlen($l['offerId']) <= 40))
+                    && is_int($l['qty'] ?? null) && $l['qty'] >= 1 && $l['qty'] <= 10;
+                if (!$ok) {
+                    $bad[] = 'lines';
+                    break;
+                }
+                $clean[] = ['productId' => $l['productId'], 'variantId' => $l['variantId'] ?? null, 'offerId' => $l['offerId'] ?? null, 'qty' => $l['qty']];
+            }
+        }
+        $out = [
+            'lines' => $clean,
+            'phone' => $str('phone', 30, true),
+            'phoneAlt' => $str('phoneAlt', 30),
+            'name' => $str('name', 80, true, 2),
+            'email' => $str('email', 120),
+            'governorate' => $str('governorate', 40, true),
+            'city' => $str('city', 80),
+            'address' => $str('address', 300, true, 4),
+            'note' => $str('note', 300),
+            'promoCode' => $str('promoCode', 40),
+            'website' => $str('website', 200),
+        ];
+        if ($out['email'] !== null && $out['email'] !== '' && !filter_var($out['email'], FILTER_VALIDATE_EMAIL)) {
+            $bad[] = 'email';
+        }
+        $payment = $in['payment'] ?? null;
+        if (!in_array($payment, ['COD', 'CARD'], true)) {
+            $bad[] = 'payment';
+        }
+        $out['payment'] = $payment;
+        $total = $in['expectedTotal'] ?? null;
+        if (!is_int($total) || $total < 0) {
+            $bad[] = 'expectedTotal';
+        }
+        $out['expectedTotal'] = $total;
+        foreach (['cartToken' => 64, 'visitorId' => 64, 'sessionId' => 64] as $k => $max) {
+            $v = $in[$k] ?? null;
+            if ($v !== null && (!is_string($v) || strlen($v) > $max)) {
+                $bad[] = $k;
+            }
+            $out[$k] = is_string($v) ? $v : null;
+        }
+        $restored = $in['restoredCartId'] ?? null;
+        if ($restored !== null && (!is_string($restored) || !preg_match('/^[a-z0-9]{20,40}$/', $restored))) {
+            $bad[] = 'restoredCartId';
+        }
+        $out['restoredCartId'] = is_string($restored) ? $restored : null;
+        $key = $in['submitKey'] ?? null;
+        if ($key !== null && (!is_string($key) || !preg_match('/^[A-Za-z0-9-]{16,64}$/', $key))) {
+            $bad[] = 'submitKey';
+        }
+        $out['submitKey'] = is_string($key) ? $key : null;
+        $a = is_array($in['attribution'] ?? null) ? $in['attribution'] : [];
+        $out['attribution'] = ['source' => $cut($a['source'] ?? null, 60), 'medium' => $cut($a['medium'] ?? null, 60), 'campaign' => $cut($a['campaign'] ?? null, 120), 'content' => $cut($a['content'] ?? null, 120), 'landing' => $cut($a['landing'] ?? null, 200)];
+        $ad = is_array($in['ad'] ?? null) ? $in['ad'] : [];
+        $clickId = static fn ($v, int $max) => is_string($v) && mb_strlen(trim($v)) <= $max ? trim($v) : null;
+        $out['ad'] = array_filter(['fbp' => $clickId($ad['fbp'] ?? null, 120), 'fbc' => $clickId($ad['fbc'] ?? null, 300), 'ttp' => $clickId($ad['ttp'] ?? null, 120), 'ttclid' => $clickId($ad['ttclid'] ?? null, 300), 'gaClientId' => $clickId($ad['gaClientId'] ?? null, 60)], static fn ($v) => $v !== null);
+        $out['consentAds'] = ($in['consentAds'] ?? false) === true;
+        $out['locale'] = in_array($in['locale'] ?? 'ar', ['fr', 'ar'], true) ? ($in['locale'] ?? 'ar') : null;
+        if ($out['locale'] === null) {
+            $bad[] = 'locale';
+        }
+        $origin = $in['origin'] ?? null;
+        if ($origin !== null && !in_array($origin, ['product', 'sheet', 'quick', 'cart', 'admin'], true)) {
+            $bad[] = 'origin';
+        }
+        // "Typed in the back office" is said by the back office only.
+        $out['origin'] = $origin === 'admin' ? null : $origin;
+        return [$out, array_values(array_unique($bad))];
+    }
+
+    /**
+     * placeOrder: turns a checked form into an order. $ctx: ua, ip, ipHash, device.
      * @return array ['ok' => true, 'ref', 'token'] or ['ok' => false, 'error', 'fields'?, 'quote'?]
      */
-    public static function place(array $in, int $attempt = 0): array
+    public static function place(array $in, array $ctx = [], int $attempt = 0): array
     {
         $submitKey = (string) ($in['submitKey'] ?? '');
         if ($submitKey !== '' && ($done = self::bySubmitKey($submitKey))) {
             return ['ok' => true, 'ref' => $done['ref'], 'token' => Tokens::orderToken($done['accessSalt'])];
         }
-
         $phone = Phone::normalize((string) ($in['phone'] ?? ''));
-        $name = trim((string) ($in['name'] ?? ''));
-        $address = trim((string) ($in['address'] ?? ''));
+        $phoneAlt = !empty($in['phoneAlt']) ? Phone::normalize((string) $in['phoneAlt']) : null;
         $gov = (string) ($in['governorate'] ?? '');
         $bad = [];
-        if (mb_strlen($name) < 2) {
-            $bad[] = 'name';
-        }
         if (!$phone) {
             $bad[] = 'phone';
         }
+        if (!empty($in['phoneAlt']) && !$phoneAlt) {
+            $bad[] = 'phoneAlt';
+        }
         if (!Gov::valid($gov)) {
             $bad[] = 'governorate';
-        }
-        if (mb_strlen($address) < 5) {
-            $bad[] = 'address';
         }
         if ($bad) {
             return ['ok' => false, 'error' => 'invalid', 'fields' => $bad];
         }
 
         $settings = Settings::all();
-        $lines = $in['lines'] ?? [];
-        $catalog = Catalog::forPricing(array_column($lines, 'productId'));
-        $quote = Pricing::quote($lines, $catalog, $gov, $settings['delivery']);
+        $lines = $in['lines'];
+        $promoCode = ($in['promoCode'] ?? '') !== '' ? $in['promoCode'] : null;
+        $quote = Pricing::quoteCart($lines, $gov, $promoCode, $phone);
+        $pq = Pricing::publicQuote($quote);
         if (!$quote['lines']) {
-            return ['ok' => false, 'error' => 'empty', 'quote' => $quote];
+            return ['ok' => false, 'error' => 'empty', 'quote' => $pq];
         }
         if ($quote['problems']) {
-            return ['ok' => false, 'error' => 'cart_changed', 'quote' => $quote];
+            return ['ok' => false, 'error' => 'cart_changed', 'quote' => $pq];
         }
         if ($quote['deliveryUnavailable'] || !$quote['delivery']) {
-            return ['ok' => false, 'error' => 'delivery_unavailable', 'quote' => $quote];
+            return ['ok' => false, 'error' => 'delivery_unavailable', 'quote' => $pq];
+        }
+        if ($promoCode !== null && $quote['promo'] && !$quote['promo']['result']['ok']) {
+            return ['ok' => false, 'error' => 'promo_invalid', 'quote' => $pq];
         }
         if ($quote['total'] !== (int) ($in['expectedTotal'] ?? -1)) {
-            return ['ok' => false, 'error' => 'price_changed', 'quote' => $quote];
+            return ['ok' => false, 'error' => 'price_changed', 'quote' => $pq];
+        }
+        // The order form offers cash on delivery only (as the Next.js shop's CARD_IN_FORM = false).
+        if (($in['payment'] ?? 'COD') === 'CARD') {
+            return ['ok' => false, 'error' => 'card_unavailable', 'quote' => $pq];
         }
 
         $salt = Tokens::random();
@@ -125,15 +233,16 @@ final class Orders
         $productIds = array_values(array_unique(array_column($quote['lines'], 'productId')));
         $now = Db::now();
         $tookStock = false;
+        $a = $in['attribution'] ?? [];
 
         try {
-            $ref = Db::tx(static function () use ($in, $phone, $name, $address, $gov, $quote, $settings, $salt, $token, $deliveryQuote, $productIds, $now, $submitKey, &$tookStock) {
+            $order = Db::tx(static function () use ($in, $ctx, $phone, $phoneAlt, $gov, $quote, $settings, $salt, $token, $deliveryQuote, $productIds, $now, $submitKey, $a, &$tookStock) {
                 // Serializable, as the Next.js shop: two orders for the last unit cannot both pass.
                 Db::run('SET TRANSACTION ISOLATION LEVEL SERIALIZABLE');
                 $customer = Db::one('SELECT id, blacklisted FROM "Customer" WHERE phone = ?', [$phone]);
                 if (!$customer) {
                     $customer = ['id' => new_id(), 'blacklisted' => false];
-                    Db::insert('Customer', ['id' => $customer['id'], 'phone' => $phone, 'name' => $name, 'createdAt' => $now, 'updatedAt' => $now]);
+                    Db::insert('Customer', ['id' => $customer['id'], 'phone' => $phone, 'name' => $in['name'], 'email' => ($in['email'] ?? '') !== '' ? $in['email'] : null, 'createdAt' => $now, 'updatedAt' => $now]);
                 }
                 $delivered = (int) Db::value('SELECT count(*) FROM "Order" WHERE "customerId" = ? AND status = \'DELIVERED\'', [$customer['id']]);
                 $refused = (int) Db::value('SELECT count(*) FROM "Order" WHERE "customerId" = ? AND status = \'REFUSED\'', [$customer['id']]);
@@ -163,32 +272,61 @@ final class Orders
                     $tookStock = true;
                 }
 
+                $promoCodeId = null;
+                if ($quote['promo'] && $quote['promo']['result']['ok']) {
+                    $promo = Db::one('SELECT id, "maxUses" FROM "PromoCode" WHERE code = ?', [$quote['promo']['code']]);
+                    if ($promo) {
+                        $n = $promo['maxUses'] !== null
+                            ? Db::run('UPDATE "PromoCode" SET "usedCount" = "usedCount" + 1 WHERE id = ? AND "usedCount" < ?', [$promo['id'], (int) $promo['maxUses']])->rowCount()
+                            : Db::run('UPDATE "PromoCode" SET "usedCount" = "usedCount" + 1 WHERE id = ?', [$promo['id']])->rowCount();
+                        if ($n === 0) {
+                            throw new StockGone();
+                        }
+                        $promoCodeId = $promo['id'];
+                    }
+                }
+
                 $orderId = new_id();
                 $ref = Tokens::orderRef();
+                $consent = !empty($in['consentAds']);
                 Db::insert('Order', [
                     'id' => $orderId,
                     'ref' => $ref,
                     'customerId' => $customer['id'],
-                    'name' => $name,
+                    'name' => $in['name'],
                     'phone' => $phone,
+                    'phoneAlt' => $phoneAlt,
+                    'email' => ($in['email'] ?? '') !== '' ? $in['email'] : null,
                     'governorate' => $gov,
-                    'city' => '',
-                    'address' => $address,
+                    'city' => $in['city'] ?? '',
+                    'address' => $in['address'],
+                    'note' => ($in['note'] ?? '') !== '' ? $in['note'] : null,
                     'subtotal' => $quote['subtotal'],
                     'discount' => $quote['discount'],
                     'deliveryFee' => $quote['deliveryFee'],
                     'total' => $quote['total'],
                     'costTotal' => $quote['costTotal'],
+                    'promoCodeId' => $promoCodeId,
+                    'promoCodeText' => $promoCodeId ? $quote['promo']['code'] : null,
+                    'paymentMethod' => 'COD',
+                    'paymentStatus' => 'UNPAID',
                     'deliveryQuote' => $deliveryQuote,
                     'flags' => Db::pgArray($flags),
                     'accessSalt' => $salt,
                     'accessHash' => Tokens::hash($token),
                     'submitKeyHash' => $submitKey !== '' ? Tokens::hash($submitKey) : null,
-                    'source' => ($in['source'] ?? '') !== '' ? mb_substr((string) $in['source'], 0, 80) : 'direct',
-                    'campaign' => ($in['campaign'] ?? '') !== '' ? mb_substr((string) $in['campaign'], 0, 120) : null,
-                    'device' => $in['device'] ?? null,
-                    'locale' => ($in['locale'] ?? 'fr') === 'ar' ? 'ar' : 'fr',
-                    'ipHash' => $in['ipHash'] ?? null,
+                    'source' => ($a['source'] ?? '') ?: 'direct',
+                    'medium' => ($a['medium'] ?? '') ?: null,
+                    'campaign' => ($a['campaign'] ?? '') ?: null,
+                    'content' => ($a['content'] ?? '') ?: null,
+                    'landing' => ($a['landing'] ?? '') ?: null,
+                    'device' => $ctx['device'] ?? null,
+                    'visitorId' => ($in['visitorId'] ?? '') ?: null,
+                    'sessionId' => ($in['sessionId'] ?? '') ?: null,
+                    'locale' => $in['locale'] ?? 'ar',
+                    'ipHash' => $ctx['ipHash'] ?? null,
+                    'consentAds' => $consent ? 'true' : 'false',
+                    'adContext' => $consent ? json_encode(($in['ad'] ?? []) + array_filter(['ua' => $ctx['ua'] ?? null, 'ip' => $ctx['ip'] ?? null]), JSON_UNESCAPED_SLASHES) : null,
                     'createdAt' => $now,
                     'updatedAt' => $now,
                 ]);
@@ -200,24 +338,43 @@ final class Orders
                     ]);
                 }
                 Db::insert('OrderEvent', ['id' => new_id(), 'orderId' => $orderId, 'from' => null, 'to' => 'PENDING', 'by' => 'client', 'createdAt' => $now]);
-                return $ref;
+                if (!empty($in['restoredCartId'])) {
+                    Db::run('UPDATE "Cart" SET status = \'CONVERTED\', "orderId" = ?, "updatedAt" = ? WHERE id = ? AND status = \'ACTIVE\'', [$orderId, $now, $in['restoredCartId']]);
+                }
+                if (!empty($in['cartToken'])) {
+                    Db::run('UPDATE "Cart" SET status = \'CONVERTED\', "orderId" = ?, phone = ?, "updatedAt" = ? WHERE "tokenHash" = ?', [$orderId, $phone, $now, Tokens::hash((string) $in['cartToken'])]);
+                }
+                return ['id' => $orderId, 'ref' => $ref];
             });
         } catch (StockGone) {
-            $fresh = Pricing::quote($lines, Catalog::forPricing(array_column($lines, 'productId')), $gov, $settings['delivery']);
-            return ['ok' => false, 'error' => 'cart_changed', 'quote' => $fresh];
+            return ['ok' => false, 'error' => 'cart_changed', 'quote' => Pricing::publicQuote(Pricing::quoteCart($lines, $gov, $promoCode, $phone))];
         } catch (PDOException $e) {
             // A serialization conflict (two orders for the last unit), a ref collision, or the same form arriving twice at once: try again.
             if (in_array($e->getCode(), ['40001', '23505'], true) && $attempt < 2) {
-                return self::place($in, $attempt + 1);
+                return self::place($in, $ctx, $attempt + 1);
             }
             error_log('[order] placement failed: ' . $e->getMessage());
             return ['ok' => false, 'error' => 'server'];
         }
-        // Counted stock changed: pages show it again from the database.
-        if ($tookStock) {
-            Cache::flush();
+        Cache::flush();
+
+        // Forms left with the same number in another browser: no reminder after an order.
+        try {
+            Db::run('UPDATE "Cart" SET status = \'CONVERTED\', "orderId" = ?, "updatedAt" = ? WHERE status = \'ACTIVE\' AND phone = ? AND "updatedAt" >= ?', [$order['id'], Db::now(), $phone, Db::now(-30 * 86400)]);
+        } catch (Throwable $e) {
+            error_log('[order] closing open forms failed: ' . $e->getMessage());
         }
-        return ['ok' => true, 'ref' => $ref, 'token' => $token];
+        // The shop's own statistics: the order, where it came from.
+        Events::server('order_placed', ['id' => $order['id'], 'total' => $quote['total'], 'visitorId' => ($in['visitorId'] ?? '') ?: null, 'sessionId' => ($in['sessionId'] ?? '') ?: null, 'source' => ($a['source'] ?? '') ?: 'direct', 'medium' => ($a['medium'] ?? '') ?: null, 'campaign' => ($a['campaign'] ?? '') ?: null, 'device' => $ctx['device'] ?? null, 'governorate' => $gov], [
+            'items' => array_sum(array_column($quote['lines'], 'qty')),
+            'lines' => count($quote['lines']),
+            'payment' => 'COD',
+            'promo' => (bool) $quote['discount'],
+            'origin' => $in['origin'] ?? 'product',
+            'restored' => !empty($in['restoredCartId']),
+        ]);
+        Notify::orderPlaced($order['id']);
+        return ['ok' => true, 'ref' => $order['ref'], 'token' => $token];
     }
 
     /** The order a tracking-link token opens, with its lines and history. */

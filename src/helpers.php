@@ -158,3 +158,69 @@ function asset(string $path): string
     $v[$path] ??= is_file($file) ? substr(md5((string) filemtime($file) . filesize($file)), 0, 8) : '0';
     return $path . '?v=' . $v[$path];
 }
+
+/**
+ * Sends the page now, completely, so work left for afterwards never makes the
+ * visitor wait (once per request; the PHP-FPM, LiteSpeed and Apache ways).
+ */
+function finish_response(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } elseif (function_exists('litespeed_finish_request')) {
+        litespeed_finish_request();
+    } else {
+        // Other servers (Apache module, PHP's own): the page is sent now with its length, so the browser
+        // has all of it and does not wait for the connection to close.
+        $out = '';
+        while (ob_get_level() > 0) {
+            $out = (string) ob_get_clean() . $out;
+        }
+        if (!headers_sent()) {
+            header('Content-Length: ' . strlen($out));
+            header('Connection: close');
+        }
+        echo $out;
+        @flush();
+    }
+    ignore_user_abort(true);
+}
+
+/**
+ * Work that must happen but need not delay the answer (afterResponse): the
+ * owner's new-order e-mail, the customer's SMS. A failure is logged and never
+ * undoes what the answer said. In the tests it runs at once.
+ */
+function after_response(callable $task): void
+{
+    static $tasks = null;
+    $run = static function (callable $t): void {
+        try {
+            $t();
+        } catch (Throwable $e) {
+            error_log('[after] ' . $e->getMessage());
+        }
+    };
+    if (!empty($GLOBALS['MENA_TESTING'])) {
+        $run($task);
+        return;
+    }
+    if ($tasks === null) {
+        $tasks = [];
+        register_shutdown_function(static function () use (&$tasks, $run) {
+            finish_response();
+            foreach ($tasks as $t) {
+                $run($t);
+            }
+        });
+    }
+    $tasks[] = $task;
+}

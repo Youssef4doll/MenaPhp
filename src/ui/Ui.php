@@ -37,31 +37,39 @@ final class Ui
         return $all;
     }
 
-    /** next/image's blurred preview: the same SVG wrapper around the stored tiny picture. */
-    private static function blurStyle(string $blur): string
+    /** next/image's blurred preview (getImageBlurSvg): the same SVG around the stored tiny picture; a sized picture keeps its proportions. */
+    private static function blurStyle(string $blur, ?int $w = null, ?int $h = null): string
     {
-        $svg = "%3Csvg xmlns='http://www.w3.org/2000/svg' %3E%3Cfilter id='b' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur stdDeviation='20'/%3E%3CfeColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 100 -1' result='s'/%3E%3CfeFlood x='0' y='0' width='100%25' height='100%25'/%3E%3CfeComposite operator='out' in='s'/%3E%3CfeComposite in2='SourceGraphic'/%3E%3CfeGaussianBlur stdDeviation='20'/%3E%3C/filter%3E%3Cimage width='100%25' height='100%25' x='0' y='0' preserveAspectRatio='none' style='filter: url(%23b);' href='" . $blur . "'/%3E%3C/svg%3E";
+        $box = $w && $h ? "viewBox='0 0 $w $h'" : '';
+        $svg = "%3Csvg xmlns='http://www.w3.org/2000/svg' " . $box . "%3E%3Cfilter id='b' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur stdDeviation='20'/%3E%3CfeColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 100 -1' result='s'/%3E%3CfeFlood x='0' y='0' width='100%25' height='100%25'/%3E%3CfeComposite operator='out' in='s'/%3E%3CfeComposite in2='SourceGraphic'/%3E%3CfeGaussianBlur stdDeviation='20'/%3E%3C/filter%3E%3Cimage width='100%25' height='100%25' x='0' y='0' preserveAspectRatio='none' style='filter: url(%23b);' href='" . $blur . "'/%3E%3C/svg%3E";
         return ';background-size:cover;background-position:50% 50%;background-repeat:no-repeat;background-image:url("data:image/svg+xml;charset=utf-8,' . $svg . '")';
     }
 
-    /** A product picture with its blurred preview while it loads ($image: id, blur, width, height). */
+    /** A product picture with its blurred preview while it loads ($image: id, blur, width, height): Img.tsx. */
     public static function img(?array $image, string $alt, string $sizes, bool $priority = false, string $class = '', bool $fill = true): string
     {
         if (!$image || empty($image['id'])) {
             return self::placeholder($class);
         }
+        return self::nextImage($image, $alt, $sizes, $priority, 'object-cover ' . $class, $fill, true);
+    }
+
+    /** next/image's <img>, with the shop's picture addresses. $blur: show the stored preview while it loads. */
+    public static function nextImage(array $image, string $alt, string $sizes, bool $priority, string $class, bool $fill, bool $blur = true): string
+    {
         $id = (string) $image['id'];
-        $srcset = implode(', ', array_map(static fn ($w) => Media::url($id, $w) . " {$w}w", self::widths($sizes)));
-        $src = Media::url($id, 1600);
-        $blur = !empty($image['blur']) && str_starts_with((string) $image['blur'], 'data:image/') ? self::blurStyle((string) $image['blur']) : '';
+        $list = self::widths($sizes);
+        $srcset = implode(', ', array_map(static fn ($w) => Media::url($id, $w) . " {$w}w", $list));
+        $src = Media::url($id, $list[count($list) - 1]);
+        $style = $blur && !empty($image['blur']) && str_starts_with((string) $image['blur'], 'data:image/') ? self::blurStyle((string) $image['blur'], $fill ? null : (int) $image['width'], $fill ? null : (int) $image['height']) : '';
         if ($priority) {
             self::$preload[$srcset . '|' . $sizes] = '<link rel="preload" as="image" imagesrcset="' . e($srcset) . '" imagesizes="' . e($sizes) . '">';
         }
         $lazy = $priority ? '' : ' loading="lazy"';
         if ($fill) {
-            return '<img alt="' . e($alt) . '"' . $lazy . ' decoding="async" data-nimg="fill" class="object-cover ' . e($class) . '" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' . e($blur) . '" sizes="' . e($sizes) . '" srcset="' . e($srcset) . '" src="' . e($src) . '">';
+            return '<img alt="' . e($alt) . '"' . $lazy . ' decoding="async" data-nimg="fill" class="' . e($class) . '" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent' . e($style) . '" sizes="' . e($sizes) . '" srcset="' . e($srcset) . '" src="' . e($src) . '">';
         }
-        return '<img alt="' . e($alt) . '"' . $lazy . ' width="' . (int) $image['width'] . '" height="' . (int) $image['height'] . '" decoding="async" data-nimg="1" class="object-cover ' . e($class) . '" style="color:transparent' . e($blur) . '" sizes="' . e($sizes) . '" srcset="' . e($srcset) . '" src="' . e($src) . '">';
+        return '<img alt="' . e($alt) . '"' . $lazy . ' width="' . (int) $image['width'] . '" height="' . (int) $image['height'] . '" decoding="async" data-nimg="1" class="' . e($class) . '" style="color:transparent' . e($style) . '" sizes="' . e($sizes) . '" srcset="' . e($srcset) . '" src="' . e($src) . '">';
     }
 
     public static function placeholder(string $class = ''): string

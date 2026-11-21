@@ -207,51 +207,52 @@ final class Shop
         self::page('shop/search', ['q' => $q, 'cards' => $cards], t('search.title'));
     }
 
-    /** The product page. $form: what was typed, when an order attempt comes back with a problem. */
-    public static function product(string $slug, array $form = []): void
+    /** The product page, as the Next.js shop's src/app/[lang]/produit/[slug]/page.tsx. */
+    public static function product(string $slug): void
     {
         self::remember();
-        $p = Catalog::product($slug);
+        $lang = lang();
+        $p = Catalog::productFor($slug, $lang);
         if (!$p) {
+            // Renamed: the old address leads to the new one, for good.
+            $moved = Catalog::productMovedTo($slug);
+            if ($moved) {
+                redirect(url('/produit/' . rawurlencode($moved)), 308);
+            }
             self::notFound();
             return;
         }
-        if (isset($p['redirect'])) {
-            redirect(url('/produit/' . rawurlencode($p['redirect'])), 301);
+        $settings = Settings::all();
+        $base = rtrim((string) config('site_url', ''), '/');
+        $pageUrl = $base . url('/produit/' . $p['slug']);
+        $everywhere = Gov::everywhere($settings['delivery']['zones']);
+        $title = Seo::productTitle($p);
+        $lead = Rules::leadOffer($p['offers']);
+        $priceNow = $lead ? $lead['price'] : min($p['price'], ...array_map(static fn ($v) => (int) $v['price'], $p['variants'] ?: [['price' => $p['price']]]));
+        $crumbs = [['name' => t('nav.home'), 'url' => $base . url('/')]];
+        if ($p['category']) {
+            $crumbs[] = ['name' => Ui::pick($p['category']['name'], $p['category']['nameAr']), 'url' => $base . url('/categorie/' . $p['category']['slug'])];
         }
-        $now = Db::now();
-        $offers = array_values(array_filter($p['offers'], static fn ($o) => Pricing::offerLive($o, $now) && $o['quantity'] >= 1));
-        $catalog = Catalog::forDisplay([$p['id']]);
-        $variants = $p['variants'];
-        // The choice shown first: what was sent back, else the first offer, else one unit; the first option that can be sold.
-        $variantId = $form['variantId'] ?? null;
-        if ($variants && !in_array($variantId, array_column($variants, 'id'), true)) {
-            $variantId = null;
-            foreach ($variants as $v) {
-                if (Pricing::sellable($p, $v) > 0) {
-                    $variantId = $v['id'];
-                    break;
-                }
-            }
-        }
-        $offerId = array_key_exists('offerId', $form) ? $form['offerId'] : ($offers[0]['id'] ?? null);
-        $qty = max(1, (int) ($form['qty'] ?? 1));
-        $gov = $form['governorate'] ?? null;
-        $quote = Pricing::quote([['productId' => $p['id'], 'variantId' => $variantId, 'offerId' => $offerId, 'qty' => $qty]], $catalog, $gov ?: null, Settings::get('delivery'));
-        $related = $p['categoryId'] ? Catalog::cards('p."categoryId" = ? AND p.id <> ?', [$p['categoryId'], $p['id']], 'p.featured DESC, p."createdAt" DESC', 8) : [];
-        $name = Catalog::name($p);
-        $summary = Catalog::name($p, 'summary');
-        self::page('shop/product', [
+        $crumbs[] = ['name' => Ui::pick($p['name'], $p['nameAr']), 'url' => $pageUrl];
+        $related = $p['related'];
+        unset($p['related']);
+        $public = Catalog::publicSettings();
+        View::render('shop/product', [
+            'title' => $title,
+            'description' => Seo::productDescription($p, $everywhere),
+            'canonical' => url('/produit/' . $p['slug']),
+            'og' => ['title' => $title, 'description' => Seo::productDescription($p, $everywhere), 'images' => array_map(static fn ($i) => '/api/img/' . $i['id'] . '/1080', array_slice($p['images'], 0, 4))],
+            'meta' => [
+                'product:price:amount' => number_format($priceNow / 1000, 3, '.', ''),
+                'product:price:currency' => 'TND',
+                'product:availability' => $p['stock']['kind'] === 'out' ? 'out of stock' : 'in stock',
+            ],
+            'jsonLd' => [Seo::product($p, $settings, $pageUrl), Seo::breadcrumb($crumbs)],
             'p' => $p,
-            'offers' => $offers,
-            'variantId' => $variantId,
-            'offerId' => $offerId,
-            'qty' => $qty,
-            'quote' => $quote,
             'related' => $related,
-            'form' => $form,
-            'sellable' => Pricing::anySellable($p, $variants),
-        ], $name . ' · ' . Settings::get('shop.name'), $summary !== '' ? $summary : null, url('/produit/' . $p['slug']));
+            'settings' => $public,
+            'pageUrl' => $pageUrl,
+        ]);
     }
 
     public static function cart(array $form = []): void
@@ -396,7 +397,7 @@ final class Shop
      * The order's token in an httpOnly cookie, the same "mena_orders" cookie as
      * the Next.js shop: the thank-you page and "my orders" open without the link.
      */
-    private static function rememberOrder(string $token): void
+    public static function rememberOrder(string $token): void
     {
         $current = array_filter(explode('.', (string) ($_COOKIE['mena_orders'] ?? '')), [Tokens::class, 'looksLikeToken']);
         $next = array_slice(array_values(array_unique([$token, ...$current])), 0, 5);

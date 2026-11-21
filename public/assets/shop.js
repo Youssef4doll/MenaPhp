@@ -13,6 +13,8 @@
   var T = {};
   try { T = JSON.parse(doc.getElementById("mena-texts").textContent); } catch (e) {}
   var Mena = (window.Mena = window.Mena || {});
+  // The shop's address (config.php), for the compiled components' links (their NEXT_PUBLIC_SITE_URL).
+  window.MENA_SITE_URL = body.getAttribute("data-site") || location.origin;
   Mena.lang = LANG;
   Mena.T = T;
 
@@ -60,25 +62,56 @@
 
   var queue = [];
   var timer = null;
+  function randomId() {
+    try { return crypto.randomUUID(); } catch (e) { return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12); }
+  }
+  // attribution.ts: one visitor id per browser; a session renewed after 30 idle minutes, with the source it landed
+  // with, or the visitor's last non-direct source of the past 30 days.
+  var VISITOR = "mena_vid", SESSION = "mena_sess", LAST_TOUCH = "mena_touch", SESSION_MS = 30 * 60000, TOUCH_MS = 30 * 86400000;
+  var SOCIAL = { "facebook.com": "facebook", "m.facebook.com": "facebook", "l.facebook.com": "facebook", "lm.facebook.com": "facebook", "instagram.com": "instagram", "l.instagram.com": "instagram", "tiktok.com": "tiktok", "wa.me": "whatsapp", "web.whatsapp.com": "whatsapp", "t.co": "twitter", "x.com": "twitter", "youtube.com": "youtube", "snapchat.com": "snapchat" };
+  var SEARCH = ["google.", "bing.", "yahoo.", "duckduckgo.", "yandex."];
+  function fromLocation() {
+    var p = new URLSearchParams(location.search), landing = location.pathname, at = Date.now();
+    var utm = p.get("utm_source");
+    if (utm) return { source: utm.toLowerCase().slice(0, 60), medium: (p.get("utm_medium") || "").toLowerCase().slice(0, 60) || "unknown", campaign: p.get("utm_campaign") != null ? p.get("utm_campaign").slice(0, 120) : null, content: p.get("utm_content") != null ? p.get("utm_content").slice(0, 120) : null, landing: landing, at: at };
+    if (p.get("fbclid")) return { source: "facebook", medium: "paid_or_social", campaign: null, content: null, landing: landing, at: at };
+    if (p.get("ttclid")) return { source: "tiktok", medium: "cpc", campaign: null, content: null, landing: landing, at: at };
+    if (p.get("gclid")) return { source: "google", medium: "cpc", campaign: null, content: null, landing: landing, at: at };
+    var ref = doc.referrer;
+    if (!ref) return null;
+    try {
+      var host = new URL(ref).hostname.replace(/^www\./, "");
+      if (host === location.hostname) return null;
+      if (SOCIAL[host]) return { source: SOCIAL[host], medium: "social", campaign: null, content: null, landing: landing, at: at };
+      if (SEARCH.some(function (x) { return host.indexOf(x) >= 0; })) return { source: host.split(".")[0], medium: "organic", campaign: null, content: null, landing: landing, at: at };
+      return { source: host.slice(0, 60), medium: "referral", campaign: null, content: null, landing: landing, at: at };
+    } catch (e) { return null; }
+  }
   function visitorId() {
-    var v = store.get("mena_vid");
-    if (!v) {
-      v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 12);
-      store.set("mena_vid", v);
-    }
-    return v;
+    var id = store.get(VISITOR);
+    if (!id) { id = randomId(); store.set(VISITOR, id); }
+    return id;
   }
   function session() {
-    var s = null;
-    try { s = JSON.parse(sessionStorage.getItem("mena_session") || "null"); } catch (e) {}
-    if (!s || typeof s.id !== "string") {
-      var p = new URLSearchParams(location.search);
-      s = {
-        id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
-        touch: { source: p.get("utm_source") || (doc.referrer && doc.referrer.indexOf(location.host) < 0 ? new URL(doc.referrer).hostname : null), medium: p.get("utm_medium"), campaign: p.get("utm_campaign"), content: p.get("utm_content"), landing: location.pathname },
-      };
-      try { sessionStorage.setItem("mena_session", JSON.stringify(s)); } catch (e) {}
+    var now = Date.now(), s = null;
+    try { s = JSON.parse(store.get(SESSION) || "null"); } catch (e) {}
+    var here = fromLocation();
+    var expired = !s || now - s.last > SESSION_MS;
+    var newCampaign = here && s && (here.source !== s.touch.source || here.campaign !== s.touch.campaign) && new URLSearchParams(location.search).has("utm_source");
+    if (expired || newCampaign) {
+      var touch = here;
+      if (touch) store.set(LAST_TOUCH, JSON.stringify(touch));
+      else {
+        try {
+          var last = JSON.parse(store.get(LAST_TOUCH) || "null");
+          if (last && now - last.at < TOUCH_MS) touch = Object.assign({}, last, { landing: location.pathname });
+        } catch (e) {}
+      }
+      s = { id: randomId(), last: now, touch: touch || { source: "direct", medium: "none", campaign: null, content: null, landing: location.pathname, at: now } };
+    } else {
+      s.last = now;
     }
+    store.set(SESSION, JSON.stringify(s));
     return s;
   }
   function flush(beacon) {
@@ -161,6 +194,8 @@
     cartListeners.forEach(function (l) { l(items); });
   }
   addEventListener("storage", function (e) { if (e.key === CART) { cartCache = null; cartListeners.forEach(function (l) { l(readCart()); }); } });
+  // The basket changed in the compiled components (product page, quick order, basket page): read it again.
+  addEventListener("mena:cart", function () { cartCache = null; cartListeners.forEach(function (l) { l(readCart()); }); });
   var itemKey = function (i) { return i.productId + "|" + (i.variantId || "") + "|" + (i.offerId || ""); };
   var sameChoice = function (a, b) { return a.productId === b.productId && (a.variantId || null) === (b.variantId || null); };
   var addedListeners = [];
@@ -168,8 +203,8 @@
     read: readCart,
     count: function (items) { return (items || readCart()).reduce(function (n, i) { return n + i.qty; }, 0); },
     key: itemKey,
-    subscribe: function (l) { cartListeners.push(l); },
-    onAdded: function (l) { addedListeners.push(l); },
+    subscribe: function (l) { cartListeners.push(l); return function () { cartListeners = cartListeners.filter(function (x) { return x !== l; }); }; },
+    onAdded: function (l) { addedListeners.push(l); return function () { addedListeners = addedListeners.filter(function (x) { return x !== l; }); }; },
     /** Same product, option and offer twice: more units (10 at most); an offer stays once; another offer of the same product takes the old one's place. */
     add: function (item) {
       var items = readCart(), key = itemKey(item), result;
@@ -431,6 +466,17 @@
     on(hello.querySelector("a"), "click", close);
   })();
 
+  // ---------------------------------------- next/image: the blurred preview goes once the picture is there
+
+  function unblur(img) {
+    // Pictures inside a Next.js component are its own business (it removes the preview the same way).
+    if (img.getAttribute("data-nimg") && img.style.backgroundImage && !img.closest("[data-island]")) {
+      img.style.backgroundSize = img.style.backgroundPosition = img.style.backgroundRepeat = img.style.backgroundImage = "";
+    }
+  }
+  doc.addEventListener("load", function (e) { if (e.target && e.target.tagName === "IMG") unblur(e.target); }, true);
+  doc.querySelectorAll("img[data-nimg]").forEach(function (img) { if (img.complete && img.naturalWidth > 0) unblur(img); });
+
   // ------------------------------------------------- opening a product (OpeningHint)
 
   on(doc, "click", function (e) {
@@ -563,4 +609,56 @@
     on(btn, "click", step);
     watch();
   })();
+
+  // ------------------------------------------- the Next.js shop's components (public/assets/islands)
+
+  var islandsUrl = (doc.getElementById("mena-texts") || {}).getAttribute ? doc.getElementById("mena-texts").getAttribute("data-islands") : null;
+  var islands = null;
+  /** Loads the compiled components once; mounts the "added to your basket" sheet with them, as the Next.js layout does. */
+  function loadIslands() {
+    if (!islands && islandsUrl) {
+      islands = import(islandsUrl).then(function () {
+        var host = doc.createElement("div");
+        doc.body.appendChild(host);
+        window.MenaIslands.mount("CartAdded", host, { lang: LANG });
+        return window.MenaIslands;
+      });
+      islands.catch(function () { islands = null; });
+    }
+    return islands || Promise.reject(new Error("no islands"));
+  }
+  Mena.loadIslands = loadIslands;
+
+  // A component written by the server (the product page): taken over in the browser.
+  doc.querySelectorAll("[data-island]").forEach(function (el) {
+    var props = {};
+    var next = el.nextElementSibling;
+    if (next && next.hasAttribute("data-props")) {
+      try { props = JSON.parse(next.textContent); } catch (e) {}
+    }
+    loadIslands().then(function (I) { I.mount(el.getAttribute("data-island"), el, props, el.hasAttribute("data-hydrate")); });
+  });
+
+  // "Acheter" on a card (QuickBuy.tsx): the order form over the list. The product is asked for at the touch.
+  on(doc, "pointerdown", function (e) {
+    var b = e.target.closest && e.target.closest("[data-quick]");
+    if (!b) return;
+    loadIslands().catch(function () {});
+    fetch("/api/products/" + encodeURIComponent(b.getAttribute("data-quick"))).catch(function () {});
+  });
+  on(doc, "click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-quick]");
+    if (!b) return;
+    e.preventDefault();
+    track("quick_buy_opened", { productId: b.getAttribute("data-product") });
+    loadIslands().then(function (I) {
+      var host = doc.createElement("div");
+      doc.body.appendChild(host);
+      var unmount = I.mount("QuickSheet", host, {
+        slug: b.getAttribute("data-quick"),
+        lang: LANG,
+        onClose: function () { setTimeout(function () { unmount(); host.remove(); }, 0); },
+      });
+    });
+  });
 })();

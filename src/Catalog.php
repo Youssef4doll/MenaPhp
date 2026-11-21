@@ -414,6 +414,163 @@ final class Catalog
         });
     }
 
+    // ------------------------------------------------------------- product page
+
+    /** loadProduct: a product page, in both languages, as the Next.js shop's ProductPage (with "related"); null when not on sale. */
+    public static function productPage(string $slug): ?array
+    {
+        return Cache::remember('product-page|' . $slug, static fn () => self::loadProductPage($slug));
+    }
+
+    /** getProduct: the page's long pictures are those of its language and those for both. */
+    public static function productFor(string $slug, ?string $lang): ?array
+    {
+        $p = self::productPage($slug);
+        if (!$p) {
+            return null;
+        }
+        $p['detailImages'] = array_values(array_map(static fn ($d) => $d['image'], array_filter($p['detailImages'], static fn ($d) => $lang === null || $d['lang'] === null || $d['lang'] === $lang)));
+        return $p;
+    }
+
+    private static function iso(?string $utc): ?string
+    {
+        return $utc === null ? null : (new DateTimeImmutable($utc, new DateTimeZone('UTC')))->format('Y-m-d\TH:i:s.v\Z');
+    }
+
+    private static function loadProductPage(string $slug): ?array
+    {
+        $now = Db::now();
+        $p = Db::one('SELECT p.id, p.slug, p.name, p."nameAr", p.summary, p."summaryAr", p.description, p."descriptionAr", p.specs, p."specsAr", p."videoUrl",
+              p."seoTitle", p."seoTitleAr", p."seoDescription", p."seoDescriptionAr", p.price, p."compareAt", p."stockMode", p."stockQty", p.available,
+              to_char(p."updatedAt", \'YYYY-MM-DD HH24:MI:SS.MS\') AS "updatedAt",
+              (SELECT json_build_object(\'slug\', c.slug, \'name\', c.name, \'nameAr\', c."nameAr") FROM "Category" c WHERE c.id = p."categoryId") AS "categoryJson",
+              (SELECT coalesce(json_agg(json_build_object(\'id\', i."mediaId", \'alt\', i.alt, \'kind\', i.kind, \'lang\', i.lang, \'width\', m.width, \'height\', m.height, \'blur\', m.blur) ORDER BY i.sort, i.id), \'[]\')
+                 FROM "ProductImage" i JOIN "Media" m ON m.id = i."mediaId" WHERE i."productId" = p.id) AS "imagesJson",
+              (SELECT coalesce(json_agg(json_build_object(\'id\', v.id, \'name\', v.name, \'nameAr\', v."nameAr", \'colorHex\', v."colorHex", \'price\', v.price, \'stockQty\', v."stockQty", \'available\', v.available) ORDER BY v.sort, v.id), \'[]\')
+                 FROM "ProductVariant" v WHERE v."productId" = p.id) AS "variantsJson",
+              (SELECT coalesce(json_agg(json_build_object(\'id\', o.id, \'label\', o.label, \'labelAr\', o."labelAr", \'quantity\', o.quantity, \'price\', o.price, \'freeDelivery\', o."freeDelivery", \'endsAt\', to_char(o."endsAt", \'YYYY-MM-DD HH24:MI:SS\')) ORDER BY o.sort, o.quantity, o.id), \'[]\')
+                 FROM "ProductOffer" o WHERE o."productId" = p.id AND o.active = true AND (o."endsAt" IS NULL OR o."endsAt" > ?)) AS "offersJson"
+             FROM "Product" p WHERE p.slug = ? AND p.active = true', [$now, $slug]);
+        if (!$p) {
+            return null;
+        }
+        $id = $p['id'];
+        $price = (int) $p['price'];
+        $compareAt = $p['compareAt'] === null ? null : (int) $p['compareAt'];
+        $available = Db::bool($p['available']);
+        $stockQty = (int) $p['stockQty'];
+        $images = json_decode((string) $p['imagesJson'], true) ?: [];
+        $rawVariants = json_decode((string) $p['variantsJson'], true) ?: [];
+        $rawOffers = json_decode((string) $p['offersJson'], true) ?: [];
+
+        $reviews = Db::all('SELECT id, rating, text, "authorName", governorate, to_char("createdAt", \'YYYY-MM-DD HH24:MI:SS.MS\') AS "createdAt" FROM "Review" WHERE "productId" = ? AND status = \'APPROVED\' ORDER BY "createdAt" DESC LIMIT 20', [$id]);
+        $agg = Db::one('SELECT avg(rating)::float8 AS avg, count(*) AS n FROM "Review" WHERE "productId" = ? AND status = \'APPROVED\'', [$id]);
+        // "Le plus choisi" is a fact or it is not shown: the offer ordered most in 60 days, at least 3 orders, clearly ahead.
+        $mostChosen = null;
+        if (count($rawOffers) > 1) {
+            $sales = Db::all('SELECT oi."offerId", count(*) AS n FROM "OrderItem" oi JOIN "Order" o ON o.id = oi."orderId" WHERE oi."offerId" IN (' . Db::marks(array_column($rawOffers, 'id')) . ') AND o.status <> \'CANCELLED\' AND o."createdAt" >= ? GROUP BY oi."offerId" ORDER BY count(*) DESC', [...array_column($rawOffers, 'id'), gmdate('Y-m-d H:i:s', time() - 60 * 86400)]);
+            if ($sales && (int) $sales[0]['n'] >= 3 && (int) $sales[0]['n'] > (int) ($sales[1]['n'] ?? 0)) {
+                $mostChosen = $sales[0]['offerId'];
+            }
+        }
+        $soldCount = self::soldFor([$id])[$id] ?? 0;
+        $categorySlug = $p['categoryJson'] ? (json_decode((string) $p['categoryJson'], true)['slug'] ?? null) : null;
+
+        $tracked = $p['stockMode'] === 'TRACKED';
+        $variants = array_map(static fn ($v) => [
+            'id' => $v['id'],
+            'name' => $v['name'],
+            'nameAr' => $v['nameAr'],
+            'colorHex' => $v['colorHex'],
+            'price' => $v['price'] ?? $price,
+            'soldOut' => $tracked ? $v['stockQty'] <= 0 : !$v['available'] || !$available,
+            'lowQty' => $tracked && $v['stockQty'] > 0 && $v['stockQty'] <= 5 ? (int) $v['stockQty'] : null,
+            'maxUnits' => $tracked ? max(0, (int) $v['stockQty']) : (!$v['available'] || !$available ? 0 : null),
+        ], $rawVariants);
+        if ($variants) {
+            $nulls = array_filter($variants, static fn ($v) => $v['maxUnits'] === null);
+            $maxUnits = $nulls ? null : max(0, ...array_map(static fn ($v) => (int) $v['maxUnits'], $variants));
+        } else {
+            $maxUnits = $tracked ? max(0, $stockQty) : ($available ? null : 0);
+        }
+        $offers = Rules::offersApply($price, $rawVariants) ? $rawOffers : [];
+        $shape = static fn ($i) => ['id' => $i['id'], 'alt' => $i['alt'], 'width' => (int) $i['width'], 'height' => (int) $i['height'], 'blur' => $i['blur']];
+        $rowForStock = ['stockMode' => $p['stockMode'], 'stockQty' => $stockQty, 'available' => $available, 'variants' => $rawVariants];
+
+        // relatedTo: others from the same category first, topped up with the shop's selection.
+        $same = $categorySlug !== null ? self::cardList('p.id <> ? AND p."categoryId" = (SELECT id FROM "Category" WHERE slug = ?)', [$id, $categorySlug], self::NEWEST, 8) : [];
+        $more = [];
+        if (count($same) < 4) {
+            $not = [$id, ...array_column($same, 'id')];
+            $more = self::cardList('p.id NOT IN (' . Db::marks($not) . ')', $not, self::NEWEST, 8 - count($same));
+        }
+
+        return [
+            'id' => $id,
+            'slug' => $p['slug'],
+            'name' => $p['name'],
+            'nameAr' => $p['nameAr'],
+            'summary' => $p['summary'],
+            'summaryAr' => $p['summaryAr'],
+            'description' => $p['description'],
+            'descriptionAr' => $p['descriptionAr'],
+            'specs' => Rules::parseSpecs($p['specs']),
+            'specsAr' => $p['specsAr'] !== null && trim($p['specsAr']) !== '' ? Rules::parseSpecs($p['specsAr']) : null,
+            'video' => Rules::parseVideo($p['videoUrl']),
+            'seoTitle' => $p['seoTitle'],
+            'seoTitleAr' => $p['seoTitleAr'],
+            'seoDescription' => $p['seoDescription'],
+            'seoDescriptionAr' => $p['seoDescriptionAr'],
+            'price' => $price,
+            'compareAt' => $compareAt !== null && $compareAt > $price ? $compareAt : null,
+            'category' => $p['categoryJson'] ? json_decode((string) $p['categoryJson'], true) : null,
+            'images' => array_values(array_map($shape, array_filter($images, static fn ($i) => $i['kind'] === 'GALLERY'))),
+            'detailImages' => array_values(array_map(static fn ($i) => ['lang' => $i['lang'], 'image' => $shape($i)], array_filter($images, static fn ($i) => $i['kind'] === 'DETAIL'))),
+            'sold' => Rules::soldStep($soldCount),
+            'variants' => $variants,
+            'stock' => Rules::stockState($rowForStock),
+            'updatedAt' => self::iso($p['updatedAt']),
+            'reviews' => array_map(static fn ($r) => ['id' => $r['id'], 'rating' => (int) $r['rating'], 'text' => $r['text'], 'authorName' => $r['authorName'], 'governorate' => $r['governorate'], 'createdAt' => self::iso($r['createdAt'])], $reviews),
+            'rating' => (int) $agg['n'] > 0 ? ['avg' => (float) $agg['avg'], 'count' => (int) $agg['n']] : null,
+            'maxUnits' => $maxUnits,
+            'offers' => array_map(static fn ($o) => [
+                'id' => $o['id'],
+                'label' => $o['label'],
+                'labelAr' => $o['labelAr'],
+                'quantity' => (int) $o['quantity'],
+                'price' => (int) $o['price'],
+                'freeDelivery' => (bool) $o['freeDelivery'],
+                'lastDay' => $o['endsAt'] !== null ? Rules::offerLastDay($o['endsAt']) : null,
+                'compareAt' => Rules::offerCompareAt($offers, $o, $compareAt),
+                'mostChosen' => $o['id'] === $mostChosen,
+            ], $offers),
+            'related' => Rules::outLast([...$same, ...$more]),
+        ];
+    }
+
+    /** productMovedTo: a product's former address → its current one. */
+    public static function productMovedTo(string $slug): ?string
+    {
+        $v = Cache::remember('product-moved|' . $slug, static fn () => Db::value('SELECT slug FROM "Product" WHERE ? = ANY("oldSlugs") AND active = true LIMIT 1', [$slug]) ?: '');
+        return $v !== '' ? $v : null;
+    }
+
+    /** publicSettings: what the browser may see of the settings. */
+    public static function publicSettings(): array
+    {
+        $s = Settings::all();
+        return [
+            'shop' => $s['shop'],
+            'contact' => $s['contact'],
+            'delivery' => $s['delivery'],
+            'returns' => $s['returns'],
+            'payments' => ['cod' => true, 'card' => !empty($s['payments']['card']) && !empty($s['payments']['konnectWalletId'])],
+            'checkout' => ['askEmail' => (bool) $s['checkout']['askEmail']],
+            'tracking' => array_intersect_key($s['tracking'], array_flip(['metaPixelId', 'ga4Id', 'gtmId', 'tiktokPixelId', 'purchaseAt'])),
+        ];
+    }
+
     // ------------------------------------------------------------------ search
 
     /** getSearchIndex: each product's words, the categories, the phrases offered as completions. */
