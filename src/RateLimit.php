@@ -14,6 +14,12 @@ final class RateLimit
         'login' => [8, 900],
         'lookup' => [10, 600],
         'cart' => [60, 60],
+        // The Next.js shop's LIMITS (rate-limit.ts).
+        'suggest' => [120, 60],
+        'events' => [120, 60],
+        'quote' => [300, 60],
+        'promo' => [30, 600],
+        'review' => [10, 3600],
     ];
 
     /** True when this hit is allowed. */

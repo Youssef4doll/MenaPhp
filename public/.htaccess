@@ -5,6 +5,11 @@ DirectoryIndex index.php
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  # The Next.js shop's picture addresses, served from the files already made (see index.php).
+  RewriteCond %{DOCUMENT_ROOT}/media/$1/$2.webp -f
+  RewriteRule ^api/img/([a-z0-9]+)/(\d+)$ media/$1/$2.webp [L]
+  RewriteCond %{DOCUMENT_ROOT}/media/$1/$2.jpg -f
+  RewriteRule ^api/img/([a-z0-9]+)/(\d+)$ media/$1/$2.jpg [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteRule ^ index.php [QSA,L]
 </IfModule>

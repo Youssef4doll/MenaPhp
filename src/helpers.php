@@ -7,15 +7,24 @@ function e(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** A new id, like the old shop's: 25 lowercase letters and digits, starting with a letter. */
+/**
+ * A new id in Prisma's cuid shape (the Next.js shop's): "c", the time in
+ * milliseconds, a counter, a machine part and random letters, 25 characters,
+ * lowercase. Ids made later sort later, as the Next.js shop's do.
+ */
 function new_id(): string
 {
-    $alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    $id = 'c';
-    for ($i = 0; $i < 24; $i++) {
-        $id .= $alphabet[random_int(0, 35)];
+    static $counter = null;
+    $counter ??= random_int(0, 36 ** 4 - 1);
+    $counter = ($counter + 1) % (36 ** 4);
+    $pad = static fn (string $s, int $n) => substr(str_pad($s, $n, '0', STR_PAD_LEFT), -$n);
+    $time = $pad(base_convert((string) (int) floor(microtime(true) * 1000), 10, 36), 8);
+    $machine = $pad(base_convert((string) (crc32((string) gethostname() . getmypid()) % (36 ** 4)), 10, 36), 4);
+    $random = '';
+    for ($i = 0; $i < 8; $i++) {
+        $random .= 'abcdefghijklmnopqrstuvwxyz0123456789'[random_int(0, 35)];
     }
-    return $id;
+    return 'c' . $time . $pad(base_convert((string) $counter, 10, 36), 4) . $machine . $random;
 }
 
 /** "Tapis de bain antidérapant" → "tapis-de-bain-antiderapant". Arabic-only names get a short random address. */
@@ -110,4 +119,117 @@ function spec_rows(?string $specs): array
         $rows[] = count($parts) === 2 ? [$parts[0], $parts[1]] : ['', $line];
     }
     return $rows;
+}
+
+/**
+ * A social profile's address (https), or "" when it is not a profile on that
+ * site (social.ts profileUrl): a bare or wrong link reads as a dead link.
+ */
+function profile_url(string $kind, string $raw): string
+{
+    $hosts = ['instagram' => ['instagram.com'], 'facebook' => ['facebook.com', 'fb.com'], 'tiktok' => ['tiktok.com']][$kind] ?? null;
+    $s = trim($raw);
+    if ($hosts === null || $s === '') {
+        return '';
+    }
+    if (preg_match('/^@[\w.]{2,}$/', $s) && $kind !== 'facebook') {
+        $s = 'https://www.' . $hosts[0] . '/' . ($kind === 'tiktok' ? $s : substr($s, 1));
+    }
+    if (!preg_match('#^https?://#i', $s)) {
+        $s = 'https://' . $s;
+    }
+    $u = parse_url($s);
+    if (!$u || empty($u['host'])) {
+        return '';
+    }
+    $host = (string) preg_replace('/^(www|m|web|vm)\./', '', strtolower($u['host']));
+    if (!in_array($host, $hosts, true)) {
+        return '';
+    }
+    $first = array_values(array_filter(explode('/', $u['path'] ?? '')))[0] ?? '';
+    $not = ['login', 'accounts', 'explore', 'sharer', 'sharer.php', 'share', 'dialog', 'home.php', 'watch', 'groups', 'hashtag', 'tag', 'search'];
+    if ($first === '' || in_array(strtolower($first), $not, true)) {
+        return '';
+    }
+    parse_str($u['query'] ?? '', $query);
+    if (($kind === 'tiktok' && !str_starts_with($first, '@')) || ($kind === 'facebook' && $first === 'profile.php' && empty($query['id']))) {
+        return '';
+    }
+    $out = 'https://' . $u['host'] . (isset($u['port']) ? ':' . $u['port'] : '') . ($u['path'] ?? '/') . (isset($u['query']) ? '?' . $u['query'] : '');
+    return rtrim($out, '/');
+}
+
+/** A file of public/ with its version, so it can be kept a year by browsers: "/assets/shop.css?v=1a2b3c4d". */
+function asset(string $path): string
+{
+    static $v = [];
+    $file = ROOT . '/public' . $path;
+    $v[$path] ??= is_file($file) ? substr(md5((string) filemtime($file) . filesize($file)), 0, 8) : '0';
+    return $path . '?v=' . $v[$path];
+}
+
+/**
+ * Sends the page now, completely, so work left for afterwards never makes the
+ * visitor wait (once per request; the PHP-FPM, LiteSpeed and Apache ways).
+ */
+function finish_response(): void
+{
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    } elseif (function_exists('litespeed_finish_request')) {
+        litespeed_finish_request();
+    } else {
+        // Other servers (Apache module, PHP's own): the page is sent now with its length, so the browser
+        // has all of it and does not wait for the connection to close.
+        $out = '';
+        while (ob_get_level() > 0) {
+            $out = (string) ob_get_clean() . $out;
+        }
+        if (!headers_sent()) {
+            header('Content-Length: ' . strlen($out));
+            header('Connection: close');
+        }
+        echo $out;
+        @flush();
+    }
+    ignore_user_abort(true);
+}
+
+/**
+ * Work that must happen but need not delay the answer (afterResponse): the
+ * owner's new-order e-mail, the customer's SMS. A failure is logged and never
+ * undoes what the answer said. In the tests it runs at once.
+ */
+function after_response(callable $task): void
+{
+    static $tasks = null;
+    $run = static function (callable $t): void {
+        try {
+            $t();
+        } catch (Throwable $e) {
+            error_log('[after] ' . $e->getMessage());
+        }
+    };
+    if (!empty($GLOBALS['MENA_TESTING'])) {
+        $run($task);
+        return;
+    }
+    if ($tasks === null) {
+        $tasks = [];
+        register_shutdown_function(static function () use (&$tasks, $run) {
+            finish_response();
+            foreach ($tasks as $t) {
+                $run($t);
+            }
+        });
+    }
+    $tasks[] = $task;
 }

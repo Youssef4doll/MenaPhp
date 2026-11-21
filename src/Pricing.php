@@ -79,7 +79,7 @@ final class Pricing
      * @param array $catalog  Catalog::forPricing(...)
      * @param array $delivery Settings 'delivery' section
      */
-    public static function quote(array $lines, array $catalog, ?string $governorate, array $delivery, ?string $nowUtc = null): array
+    public static function quote(array $lines, array $catalog, ?string $governorate, array $delivery, ?string $nowUtc = null, ?array $promoRow = null, bool $phoneAlreadyUsedPromo = false): array
     {
         $nowUtc ??= Db::now();
         $problems = [];
@@ -92,7 +92,7 @@ final class Pricing
         foreach (self::mergeLines($lines) as $l) {
             $p = $catalog[$l['productId']] ?? null;
             if (!$p || !$p['active']) {
-                $problems[] = ['productId' => $l['productId'], 'variantId' => $l['variantId'], 'offerId' => $l['offerId'], 'kind' => 'not_found'];
+                $problems[] = ['productId' => $l['productId'], 'variantId' => $l['variantId'], 'kind' => 'not_found'];
                 continue;
             }
             $v = null;
@@ -103,7 +103,7 @@ final class Pricing
                     }
                 }
                 if ($v === null) {
-                    $problems[] = ['productId' => $p['id'], 'variantId' => $l['variantId'], 'offerId' => $l['offerId'], 'kind' => 'variant_required'];
+                    $problems[] = ['productId' => $p['id'], 'variantId' => $l['variantId'], 'kind' => 'variant_required'];
                     continue;
                 }
             }
@@ -169,13 +169,23 @@ final class Pricing
 
         $subtotal = array_sum(array_column($priced, 'lineTotal'));
         $discount = 0;
+        $promo = null;
+        $promoFree = false;
+        if ($promoRow) {
+            $result = self::evaluatePromo($promoRow, $subtotal, $nowUtc, $phoneAlreadyUsedPromo);
+            $promo = ['code' => $promoRow['code'], 'result' => $result];
+            if ($result['ok']) {
+                $discount = $result['discount'];
+                $promoFree = $result['freeDelivery'];
+            }
+        }
         $afterDiscount = $subtotal - $discount;
         $zones = $delivery['zones'] ?? [];
         $zone = $governorate !== null && $governorate !== '' ? ($zones[$governorate] ?? null) : null;
         $deliveryUnavailable = $governorate !== null && $governorate !== '' && (!$zone || !$zone['enabled']);
         $threshold = $delivery['freeThreshold'] ?? null;
         $thresholdMet = $threshold !== null && $afterDiscount >= $threshold;
-        $free = $thresholdMet || (bool) array_filter($priced, static fn ($x) => $x['freeDelivery']);
+        $free = $promoFree || $thresholdMet || (bool) array_filter($priced, static fn ($x) => $x['freeDelivery']);
 
         // One fee everywhere: it is known before the governorate, so the total is the real one from the start.
         $fee = 0;
@@ -198,8 +208,80 @@ final class Pricing
             'deliveryUnavailable' => $deliveryUnavailable,
             'freeThreshold' => $threshold,
             'freeDeliveryRemaining' => $threshold !== null && !$free && $priced ? max(0, $threshold - $afterDiscount) : null,
+            'promo' => $promo,
             'costTotal' => $costKnown && $priced ? $costTotal : null,
         ];
+    }
+
+    /** promo.ts evaluatePromo: percent discounts rounded down to 100 millimes. $now: UTC "Y-m-d H:i:s". */
+    public static function evaluatePromo(array $p, int $subtotal, string $now, bool $phoneAlreadyUsed): array
+    {
+        if (!Db::bool($p['active'])) {
+            return ['ok' => false, 'reason' => 'inactive'];
+        }
+        if ($p['startsAt'] !== null && $now < substr((string) $p['startsAt'], 0, 19)) {
+            return ['ok' => false, 'reason' => 'not_started'];
+        }
+        if ($p['endsAt'] !== null && $now > substr((string) $p['endsAt'], 0, 19)) {
+            return ['ok' => false, 'reason' => 'expired'];
+        }
+        if ($p['maxUses'] !== null && (int) $p['usedCount'] >= (int) $p['maxUses']) {
+            return ['ok' => false, 'reason' => 'used_up'];
+        }
+        if ($subtotal < (int) $p['minSubtotal']) {
+            return ['ok' => false, 'reason' => 'min_subtotal'];
+        }
+        if (Db::bool($p['oncePerPhone']) && $phoneAlreadyUsed) {
+            return ['ok' => false, 'reason' => 'already_used'];
+        }
+        $value = (int) $p['value'];
+        return match ($p['kind']) {
+            'PERCENT' => ['ok' => true, 'discount' => intdiv(intdiv($subtotal * min(90, max(0, $value)), 100), 100) * 100, 'freeDelivery' => false],
+            'FIXED' => ['ok' => true, 'discount' => min(max(0, $value), $subtotal), 'freeDelivery' => false],
+            default => ['ok' => true, 'discount' => 0, 'freeDelivery' => true],
+        };
+    }
+
+    public static function normalizeCode(string $code): string
+    {
+        return (string) preg_replace('/\s+/u', '', mb_strtoupper(trim($code)));
+    }
+
+    /**
+     * quoteCart: a basket priced from the database, read fresh: the catalog rows, the delivery settings, the
+     * code looked up by its text. The same function prices the page, the basket and the order itself.
+     */
+    public static function quoteCart(array $lines, ?string $governorate, ?string $promoCode, ?string $phone): array
+    {
+        $settings = Settings::all();
+        $catalog = Catalog::forPricing(array_column($lines, 'productId'));
+        $gov = $governorate !== null && Gov::valid($governorate) ? $governorate : null;
+        $promo = null;
+        $usedByPhone = false;
+        $code = $promoCode ? self::normalizeCode($promoCode) : '';
+        if ($code !== '') {
+            $promo = Db::one('SELECT id, code, kind, value, "minSubtotal", "maxUses", "usedCount", "oncePerPhone", to_char("startsAt", \'YYYY-MM-DD HH24:MI:SS\') AS "startsAt", to_char("endsAt", \'YYYY-MM-DD HH24:MI:SS\') AS "endsAt", active FROM "PromoCode" WHERE code = ?', [$code]);
+            if ($promo && Db::bool($promo['oncePerPhone']) && $phone) {
+                $usedByPhone = (int) Db::value('SELECT count(*) FROM "Order" WHERE "promoCodeId" = ? AND phone = ? AND status <> \'CANCELLED\'', [$promo['id'], $phone]) > 0;
+            }
+        }
+        $q = self::quote($lines, $catalog, $gov, $settings['delivery'], null, $promo, $usedByPhone);
+        // An unknown code is reported like any refused one.
+        if ($code !== '' && !$promo) {
+            $q['promo'] = ['code' => $code, 'result' => ['ok' => false, 'reason' => 'inactive']];
+        }
+        return $q;
+    }
+
+    /** publicQuote: what the browser may see of a quote, no supplier costs. */
+    public static function publicQuote(array $q): array
+    {
+        unset($q['costTotal']);
+        $q['lines'] = array_map(static function ($l) {
+            unset($l['unitCost']);
+            return $l;
+        }, $q['lines']);
+        return $q;
     }
 
     private static function line(array $p, ?array $v, array $rest): array

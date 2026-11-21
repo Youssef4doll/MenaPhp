@@ -1,74 +1,75 @@
 <?php
-/** @var string $content @var string $title @var ?string $description @var ?string $canonical */
+/**
+ * The shop's frame, as the Next.js shop's src/app/[lang]/layout.tsx: the same
+ * <html> classes (the compiled stylesheet keys on them), the skip link, the
+ * header, the page, the footer and the WhatsApp button.
+ *
+ * @var string $content @var string $title @var ?string $description @var ?string $canonical
+ * @var bool $fullTitle (the title is used as it is, without "· Mena") @var array $jsonLd @var ?array $og
+ */
 $l = lang();
-$shopName = (string) Settings::get('shop.name', 'Mena');
+$s = Settings::all();
+$shopName = (string) $s['shop']['name'];
+$tagline = Ui::pick($s['shop']['tagline'], $s['shop']['taglineAr']);
+$pageTitle = !empty($fullTitle) || $title === '' ? ($title !== '' ? $title : "$shopName — $tagline") : "$title · $shopName";
+$desc = $description ?? $tagline;
 $here = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$bare = $l === 'ar' ? (substr($here, 3) ?: '/') : $here;
-$other = $l === 'ar' ? 'fr' : 'ar';
-$qs = $_SERVER['QUERY_STRING'] ?? '';
-$switch = url($bare, $other) . ($qs !== '' ? '?' . $qs : '');
-$count = Cart::count();
-$wa = (string) Settings::get('contact.whatsapp', '');
-$flash = $_SESSION['flash'] ?? null;
-unset($_SESSION['flash']);
+$bare = (string) preg_replace('#^/(ar|fr)(?=/|$)#', '', $here) ?: '/';
+$base = rtrim((string) config('site_url', ''), '/');
+$header = Ui::header(Catalog::navCategories());
+$footer = Ui::footer();
+$wa = Ui::waFloat();
 ?>
 <!doctype html>
-<html lang="<?= $l ?>" dir="<?= $l === 'ar' ? 'rtl' : 'ltr' ?>">
+<html lang="<?= $l === 'ar' ? 'ar-TN' : 'fr-TN' ?>" dir="<?= $l === 'ar' ? 'rtl' : 'ltr' ?>" class="shop-root cairo_dbaca838-module___q3zXW__variable">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e($title) ?></title>
-<?php if (!empty($description)) : ?><meta name="description" content="<?= e(mb_substr($description, 0, 160)) ?>"><?php endif ?>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preload" href="/assets/media/<?= $l === 'ar' ? '9ff27b8a0a8f3dc0-s.p.40_3w74kn95bo' : 'd41831e24743a3c1-s.p.08tn9snzkmifr' ?>.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="<?= e(asset('/assets/shop.css')) ?>">
+<?= implode("\n", Ui::$preload) ?>
+
+<meta name="theme-color" content="#ffffff">
+<title><?= e($pageTitle) ?></title>
+<meta name="description" content="<?= e(mb_substr((string) $desc, 0, 300)) ?>">
+<?php if (!empty($robots)) : ?>
+<meta name="robots" content="<?= e($robots) ?>">
+<?php endif ?>
 <?php if (!empty($canonical)) : ?>
-<link rel="canonical" href="<?= e(absolute_url($canonical)) ?>">
-<link rel="alternate" hreflang="fr" href="<?= e(absolute_url(url($bare, 'fr'))) ?>">
-<link rel="alternate" hreflang="ar" href="<?= e(absolute_url(url($bare, 'ar'))) ?>">
+<link rel="canonical" href="<?= e($base . $canonical) ?>">
+<link rel="alternate" hreflang="fr" href="<?= e($base . url($bare, 'fr')) ?>">
+<link rel="alternate" hreflang="ar" href="<?= e($base . url($bare, 'ar')) ?>">
+<link rel="alternate" hreflang="x-default" href="<?= e($base . url($bare, 'fr')) ?>">
 <?php endif ?>
-<meta name="theme-color" content="#1f5d8c">
+<meta property="og:title" content="<?= e($og['title'] ?? $pageTitle) ?>">
+<meta property="og:description" content="<?= e(mb_substr((string) ($og['description'] ?? $desc), 0, 300)) ?>">
+<meta property="og:site_name" content="<?= e($shopName) ?>">
+<meta property="og:locale" content="<?= $l === 'ar' ? 'ar_TN' : 'fr_TN' ?>">
+<?php foreach ($og['images'] ?? [] as $img) : ?>
+<meta property="og:image" content="<?= e($base . $img) ?>">
+<?php endforeach ?>
+<meta property="og:type" content="<?= e($og['type'] ?? 'website') ?>">
+<?php foreach ($meta ?? [] as $k => $v) : ?>
+<meta property="<?= e($k) ?>" content="<?= e($v) ?>">
+<?php endforeach ?>
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="preload" href="/assets/fonts/cairo-<?= $l === 'ar' ? 'arabic' : 'latin' ?>-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/app.css?v=1">
-<script src="/assets/app.js?v=1" defer></script>
-</head>
-<body>
-<a class="skip" href="#main"><?= e(t('nav.skip')) ?></a>
-<header class="top">
-  <div class="wrap top-row">
-    <a class="logo" href="<?= e(url('/')) ?>" aria-label="<?= e($shopName) ?>"><img src="/assets/logo.png" alt="<?= e($shopName) ?>" width="104" height="37"></a>
-    <form class="search" action="<?= e(url('/recherche')) ?>" method="get" role="search">
-      <input type="search" name="q" placeholder="<?= e(t('nav.searchPlaceholder')) ?>" aria-label="<?= e(t('nav.search')) ?>" value="<?= e(get_str('q', 80)) ?>">
-    </form>
-    <a class="lang" href="<?= e($switch) ?>" hreflang="<?= $other ?>"><?= e(t('nav.language')) ?></a>
-    <a class="cart-link" href="<?= e(url('/panier')) ?>" aria-label="<?= e(t('nav.cart')) ?> (<?= $count ?>)">
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L21 8H6.2M10 21h.01M17 21h.01"/></svg>
-      <?php if ($count > 0) : ?><span class="badge"><?= $count ?></span><?php endif ?>
-    </a>
-  </div>
-  <div class="trust-bar"><div class="wrap"><?= e(t('trust.cod')) ?> · <?= e(Gov::everywhere(Settings::get('delivery.zones', [])) ? t('trust.delivery') : t('trust.deliveryHome')) ?><?php if (Settings::get('delivery.openBeforePaying')) : ?> · <?= e(t('trust.openBeforePaying')) ?><?php endif ?></div></div>
-</header>
-<?php if ($flash) : ?><div class="wrap"><p class="flash" role="status"><?= e($flash) ?></p></div><?php endif ?>
-<main id="main"><?= $content ?></main>
-<footer class="foot">
-  <div class="wrap foot-grid">
-    <div>
-      <img src="/assets/logo.png" alt="<?= e($shopName) ?>" width="90" height="32">
-      <p class="muted"><?= e($l === 'ar' ? Settings::get('shop.taglineAr') : Settings::get('shop.tagline')) ?></p>
-    </div>
-    <nav aria-label="<?= e(t('footer.help')) ?>">
-      <a href="<?= e(url('/suivi')) ?>"><?= e(t('nav.track')) ?></a>
-      <a href="<?= e(url('/livraison-retours')) ?>"><?= e(t('footer.deliveryReturns')) ?></a>
-      <a href="<?= e(url('/contact')) ?>"><?= e(t('footer.contact')) ?></a>
-      <a href="<?= e(url('/conditions')) ?>"><?= e(t('footer.terms')) ?></a>
-      <a href="<?= e(url('/confidentialite')) ?>"><?= e(t('footer.privacy')) ?></a>
-    </nav>
-  </div>
-  <p class="wrap muted small">© <?= date('Y') ?> <?= e(Settings::get('shop.legalName') ?: $shopName) ?>. <?= e(t('footer.rights')) ?></p>
-</footer>
-<?php if ($wa !== '') : ?>
-<a class="wa-bubble" href="https://wa.me/216<?= e(preg_replace('/\D/', '', $wa)) ?>" target="_blank" rel="noopener" aria-label="WhatsApp">
-  <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.2c0-.1-.2-.2-.5-.3Z"/></svg>
-</a>
+<link rel="icon" href="/assets/icon.svg" sizes="any" type="image/svg+xml">
+<meta name="facebook-domain-verification" content="ea2z4wt9uo28w8hpxgzduab5r3s4el">
+<?php foreach ($jsonLd ?? [] as $ld) : ?>
+<script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
+<?php endforeach ?>
+<?php if (str_contains($content, 'data-island=')) : ?>
+<link rel="modulepreload" href="<?= e(asset('/assets/islands/islands.js')) ?>">
 <?php endif ?>
+<script src="<?= e(asset('/assets/shop.js')) ?>" defer></script>
+</head>
+<body class="min-h-dvh" data-lang="<?= $l ?>" data-base="<?= $l === 'ar' ? '/ar' : '' ?>" data-site="<?= e($base) ?>">
+<a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-[16px] focus:font-bold focus:text-white"><?= e(t('nav.skip')) ?></a>
+<?= $header ?>
+<main id="main" tabindex="-1" class="outline-none"><?= $content ?></main>
+<?= $footer ?>
+<?= $wa ?>
+<script type="application/json" id="mena-texts" data-islands="<?= e(asset('/assets/islands/islands.js')) ?>"><?= json_encode(Ui::clientTexts(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
 </body>
 </html>

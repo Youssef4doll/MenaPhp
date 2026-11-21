@@ -30,6 +30,11 @@ final class Settings
             'delivery' => ['carrierName' => 'Livraison à domicile', 'fee' => 8000, 'zones' => $zones, 'freeThreshold' => null, 'openBeforePaying' => true],
             'returns' => ['days' => 10],
             'checkout' => ['askEmail' => false, 'maxOrdersPerPhonePerDay' => 3],
+            // The other sections of the Next.js shop's settings, with its defaults (settings-schema.ts).
+            'costs' => ['carrierPerParcel' => null, 'returnPerParcel' => null],
+            'payments' => ['cod' => true, 'card' => false, 'konnectWalletId' => '', 'konnectSandbox' => true],
+            'tracking' => ['metaPixelId' => '', 'ga4Id' => '', 'gtmId' => '', 'tiktokPixelId' => '', 'purchaseAt' => 'placed'],
+            'notify' => ['smsUrl' => '', 'smsMethod' => 'GET', 'smsBody' => '', 'smsSender' => 'MENA', 'smsOnPlaced' => true, 'smsOnShipped' => true, 'emailFrom' => '', 'orderAlertTo' => ''],
         ];
     }
 
