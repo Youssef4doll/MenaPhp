@@ -16,17 +16,26 @@ orders, customers, settings and back-office accounts. Nothing to copy.
 
 ## What is in this version, and what is not (yet)
 
+The storefront is a copy of the Next.js shop's: the same stylesheet and
+fonts, the same markup (checked element by element against the Next.js
+shop's pages), and for everything interactive (offers, options, the order
+form, the quick order sheet, the basket, the thank-you and tracking pages)
+**the Next.js shop's own components**, compiled into `public/assets/islands`.
+They call the same addresses as there (`/api/quote`, `/api/orders`,
+`/api/cart`, `/api/events`, `/api/products/…`, `/api/suggest`, `/api/img/…`),
+which this version answers the same way.
+
 | In | Not yet (still in the Next.js shop) |
 |---|---|
-| Home (categories first), categories, all products, search | Promo codes |
-| Product page: photos, offers (packs), options, description, details, video, questions | Unfinished-order follow-up (abandoned carts) |
-| Order form with price, delivery and total in the same card | Analytics, ad pixels, ads tools |
-| Basket, thank-you page, order tracking (link or reference + phone) | E-mail and SMS when an order is placed or shipped |
-| Delivery & returns, contact, terms, privacy pages | Reviews, return requests |
-| Back office: orders (confirm, ship, deliver, cancel, calls, blacklist) | AI texts, imports from supplier pages, CSV import/export |
-| Back office: products (photos, offers, options), categories, settings | Home banners editor, suppliers, expenses |
+| The whole storefront: home, categories, shop, search with suggestions, product page, quick order, basket, thank-you, tracking, reviews and returns from the tracking page, information pages | Back office: product import (CSV, supplier pages), AI texts and translations |
+| Promo codes, unfinished forms (for the back office's call list), statistics events, ad pixels and Tag Manager | Back office: the Next.js product editor and list (this version has a simpler one) |
+| Customer SMS and the owner's new-order e-mail (same settings and keys as the Next.js shop) | Home banners editor, suppliers, expenses, ads tools |
+| Back office: orders (confirm, ship, deliver, cancel, calls, blacklist), products (photos, offers, options), categories, settings | |
 
-Without e-mail alerts, **check the back office for new orders** (Commandes).
+**Changing the interactive parts**: they come from the Next.js shop's code.
+After a change there, rebuild them with Node.js on a computer (never on the
+host): `node tools/islands/build.mjs ../Mena`, then commit
+`public/assets/islands`.
 
 ## 1. Check a host before you pay
 

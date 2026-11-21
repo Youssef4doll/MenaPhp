@@ -507,6 +507,7 @@ final class Ui
             'recent' => t('home.recent'),
             'rowArrows' => '<button type="button" data-row-go="-1" aria-label="' . e(t('home.rowPrev')) . '" class="' . $arrow . ' -start-4" hidden>' . icon('Chevron', 'h-5 w-5 rotate-180') . '</button><button type="button" data-row-go="1" aria-label="' . e(t('home.rowNext')) . '" class="' . $arrow . ' -end-4" hidden>' . icon('Chevron', 'h-5 w-5') . '</button>',
             'imgExt' => Media::ext(),
+            'tracking' => array_intersect_key(Settings::get('tracking', []), array_flip(['metaPixelId', 'tiktokPixelId', 'gtmId'])),
             'icons' => array_map(static fn ($v) => $v[1], Icons::SVG),
         ];
     }

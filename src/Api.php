@@ -15,6 +15,11 @@ final class Api
         $r->post('/api/orders', [self::class, 'order']);
         $r->post('/api/cart', [self::class, 'cart']);
         $r->post('/api/events', [self::class, 'events']);
+        $r->get('/api/cart/{id}', [self::class, 'restoreCart']);
+        $r->post('/api/orders/lookup', [self::class, 'lookup']);
+        $r->post('/api/orders/{ref}/review', [self::class, 'review']);
+        $r->post('/api/orders/{ref}/return', [self::class, 'returnRequest']);
+        $r->post('/api/forget-device', [self::class, 'forget']);
     }
 
     public static function json(mixed $data, int $status = 200, array $headers = []): never
@@ -230,5 +235,135 @@ final class Api
         } catch (InvalidArgumentException) {
             self::json(['ok' => false], 400);
         }
+    }
+
+    /** The lines of an unfinished order, for a reminder's link: ids, options, offers and names, no person, no price. */
+    public static function restoreCart(string $id): void
+    {
+        self::limited('cart');
+        if (!preg_match('/^[a-z0-9]{20,40}$/', $id)) {
+            self::json(['items' => []], 404);
+        }
+        $cart = Db::one('SELECT lines, status FROM "Cart" WHERE id = ?', [$id]);
+        if (!$cart || $cart['status'] !== 'ACTIVE') {
+            self::json(['items' => []], 404);
+        }
+        $lines = json_decode((string) $cart['lines'], true) ?: [];
+        $catalog = Catalog::forPricing(array_values(array_filter(array_map(static fn ($l) => $l['productId'] ?? '', $lines))));
+        $now = Db::now();
+        $items = [];
+        foreach (array_slice($lines, 0, 30) as $l) {
+            $p = $catalog[$l['productId'] ?? ''] ?? null;
+            if (!$p || !$p['active']) {
+                continue;
+            }
+            $v = null;
+            foreach ($p['variants'] as $x) {
+                if ($x['id'] === ($l['variantId'] ?? null)) {
+                    $v = $x;
+                }
+            }
+            $o = null;
+            foreach ($p['offers'] as $x) {
+                if ($x['id'] === ($l['offerId'] ?? null) && Pricing::offerLive($x, $now)) {
+                    $o = $x;
+                }
+            }
+            $qty = is_int($l['qty'] ?? null) ? min(10, max(1, $l['qty'])) : 1;
+            $items[] = ['productId' => $p['id'], 'variantId' => $v['id'] ?? null, 'offerId' => $o['id'] ?? null, 'qty' => $o ? 1 : $qty, 'slug' => $p['slug'], 'name' => $p['name'], 'nameAr' => $p['nameAr'], 'variantName' => $v['name'] ?? null, 'variantNameAr' => $v['nameAr'] ?? null, 'offerLabel' => $o ? OfferLabel::line($o, 'fr') : null, 'offerLabelAr' => $o ? OfferLabel::line($o, 'ar') : null, 'imageId' => $p['imageId']];
+        }
+        self::json(['items' => $items]);
+    }
+
+    /** Order reference AND the full phone number, both, or nothing. */
+    public static function lookup(): void
+    {
+        if (!self::sameOrigin()) {
+            self::json(['ok' => false], 403);
+        }
+        self::limited('lookup');
+        $d = self::body();
+        if (!is_string($d['ref'] ?? null) || strlen($d['ref']) > 20 || !is_string($d['phone'] ?? null) || strlen($d['phone']) > 30) {
+            self::json(['ok' => false], 400);
+        }
+        $phone = Phone::normalize($d['phone']);
+        $ref = (string) preg_replace('/^MN(?!-)/', 'MN-', strtoupper(trim($d['ref'])));
+        if (!$phone) {
+            self::json(['ok' => false], 404);
+        }
+        $o = Db::one('SELECT ref, "accessSalt" FROM "Order" WHERE ref = ? AND phone = ?', [$ref, $phone]);
+        if (!$o) {
+            self::json(['ok' => false], 404);
+        }
+        Shop::rememberOrder(Tokens::orderToken($o['accessSalt']));
+        self::json(['ok' => true, 'ref' => $o['ref']]);
+    }
+
+    /** A review: this browser's order, delivered, a line of it with no review yet. Then it waits for moderation. */
+    public static function review(string $ref): void
+    {
+        if (!self::sameOrigin()) {
+            self::json(['ok' => false], 403);
+        }
+        self::limited('review');
+        $orderId = Orders::accessible($ref);
+        if (!$orderId) {
+            self::json(['ok' => false], 403);
+        }
+        $d = self::body();
+        $text = is_string($d['text'] ?? null) ? trim($d['text']) : null;
+        $name = is_string($d['authorName'] ?? null) ? trim($d['authorName']) : '';
+        $rating = $d['rating'] ?? null;
+        if (!is_string($d['itemId'] ?? null) || strlen($d['itemId']) > 40 || !is_int($rating) || $rating < 1 || $rating > 5 || ($text !== null && mb_strlen($text) > 800) || $name === '' || mb_strlen($name) > 40) {
+            self::json(['ok' => false], 400);
+        }
+        $item = Db::one('SELECT i.id, i."productId", o.governorate, (SELECT r.id FROM "Review" r WHERE r."orderItemId" = i.id) AS "reviewId" FROM "OrderItem" i JOIN "Order" o ON o.id = i."orderId" WHERE i.id = ? AND i."orderId" = ? AND o.status = \'DELIVERED\' AND i."productId" IS NOT NULL', [$d['itemId'], $orderId]);
+        if (!$item || $item['reviewId']) {
+            self::json(['ok' => false], 409);
+        }
+        Db::insert('Review', ['id' => new_id(), 'productId' => $item['productId'], 'orderItemId' => $item['id'], 'rating' => $rating, 'text' => $text ?: null, 'authorName' => $name, 'governorate' => $item['governorate'], 'status' => 'PENDING', 'createdAt' => Db::now()]);
+        self::json(['ok' => true]);
+    }
+
+    /** A return request, within the return days of a delivered order, one open at a time. */
+    public static function returnRequest(string $ref): void
+    {
+        if (!self::sameOrigin()) {
+            self::json(['ok' => false], 403);
+        }
+        self::limited('review');
+        $orderId = Orders::accessible($ref);
+        if (!$orderId) {
+            self::json(['ok' => false], 403);
+        }
+        $d = self::body();
+        $reason = is_string($d['reason'] ?? null) ? trim($d['reason']) : '';
+        $details = is_string($d['details'] ?? null) ? trim($d['details']) : null;
+        if (mb_strlen($reason) < 2 || mb_strlen($reason) > 120 || ($details !== null && mb_strlen($details) > 600)) {
+            self::json(['ok' => false], 400);
+        }
+        $o = Db::one('SELECT status, to_char("deliveredAt", \'YYYY-MM-DD HH24:MI:SS\') AS "deliveredAt", (SELECT count(*) FROM "ReturnRequest" r WHERE r."orderId" = "Order".id AND r.status IN (\'REQUESTED\', \'ACCEPTED\', \'RECEIVED\')) AS open FROM "Order" WHERE id = ?', [$orderId]);
+        if (!$o || $o['status'] !== 'DELIVERED' || !$o['deliveredAt']) {
+            self::json(['ok' => false], 409);
+        }
+        if (time() - strtotime($o['deliveredAt'] . ' UTC') > (int) Settings::get('returns.days', 10) * 86400) {
+            self::json(['ok' => false, 'error' => 'too_late'], 409);
+        }
+        if ((int) $o['open'] > 0) {
+            self::json(['ok' => false, 'error' => 'open'], 409);
+        }
+        $now = Db::now();
+        Db::insert('ReturnRequest', ['id' => new_id(), 'orderId' => $orderId, 'reason' => $reason, 'details' => $details ?: null, 'createdAt' => $now, 'updatedAt' => $now]);
+        self::json(['ok' => true]);
+    }
+
+    /** "Forget this device": this browser no longer lists its orders (they stay with the shop). */
+    public static function forget(): void
+    {
+        if (!self::sameOrigin()) {
+            self::json(['ok' => false], 403);
+        }
+        setcookie('mena_orders', '', ['expires' => time() - 3600, 'path' => '/', 'secure' => is_https(), 'httponly' => true, 'samesite' => 'Lax']);
+        self::json(['ok' => true]);
     }
 }

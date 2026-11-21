@@ -149,10 +149,41 @@
   };
   track("page_view");
 
+  // ------------------------------------------------- pixels (Consent.tsx ConsentAndPixels)
+  // The owner's choice in the Next.js shop: the ad and analytics tags load for every visitor (getConsent is
+  // "granted"). Meta and TikTok only with an id saved in Paramètres; Google Tag Manager with the shop's container.
+  (function () {
+    var ids = T.tracking || {};
+    var params = new URLSearchParams(location.search);
+    // The ad click ids of the landing address, kept for the order.
+    if (params.get("ttclid")) store.set("mena_ttclid", params.get("ttclid"));
+    if (params.get("fbclid")) store.set("mena_fbclid", JSON.stringify({ v: params.get("fbclid"), at: Date.now() }));
+    function inline(code) { var el = doc.createElement("script"); el.text = code; doc.head.appendChild(el); }
+    if (ids.metaPixelId) {
+      inline("!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init'," + JSON.stringify(ids.metaPixelId) + ");fbq('track','PageView');");
+    }
+    if (ids.tiktokPixelId) {
+      inline("!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=[\"page\",\"track\",\"identify\",\"instances\",\"debug\",\"on\",\"off\",\"once\",\"ready\",\"alias\",\"group\",\"enableCookie\",\"disableCookie\",\"holdConsent\",\"revokeConsent\",\"grantConsent\"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var r=\"https://analytics.tiktok.com/i18n/pixel/events.js\";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=d.createElement(\"script\");o.type=\"text/javascript\",o.async=!0,o.src=r+\"?sdkid=\"+e+\"&lib=\"+t;var a=d.getElementsByTagName(\"script\")[0];a.parentNode.insertBefore(o,a)};ttq.load(" + JSON.stringify(ids.tiktokPixelId) + ");ttq.page();}(window,document,'ttq');");
+    }
+    // Google: the owner's Tag Manager container (GA4 and the rest are set up inside it), as the Next.js shop loads it.
+    var gtm = doc.createElement("script");
+    gtm.async = true;
+    gtm.src = "https://www.googletagmanager.com/gtm.js?id=" + encodeURIComponent(ids.gtmId || "GTM-W7T87BV3");
+    doc.head.appendChild(gtm);
+    inline("window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}window.gtag=gtag;gtag('js',new Date());");
+  })();
+  function pixelContact() {
+    if (window.fbq) window.fbq("track", "Contact");
+    if (window.ttq) window.ttq.track("Contact");
+    if (window.gtag) window.gtag("event", "contact");
+  }
+
   // Phone, WhatsApp and Messenger links are counted (ContactLink.tsx).
   on(doc, "click", function (e) {
     var a = e.target.closest && e.target.closest("[data-contact]");
-    if (a) track(a.getAttribute("data-contact") + "_clicked", { props: { where: a.getAttribute("data-where") } });
+    if (!a) return;
+    track(a.getAttribute("data-contact") + "_clicked", { props: { where: a.getAttribute("data-where") } });
+    pixelContact();
   });
   // Which product was opened from which list (ListClicks.tsx).
   on(doc, "click", function (e) {

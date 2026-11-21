@@ -7,15 +7,24 @@ function e(?string $s): string
     return htmlspecialchars((string) $s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** A new id, like the old shop's: 25 lowercase letters and digits, starting with a letter. */
+/**
+ * A new id in Prisma's cuid shape (the Next.js shop's): "c", the time in
+ * milliseconds, a counter, a machine part and random letters, 25 characters,
+ * lowercase. Ids made later sort later, as the Next.js shop's do.
+ */
 function new_id(): string
 {
-    $alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    $id = 'c';
-    for ($i = 0; $i < 24; $i++) {
-        $id .= $alphabet[random_int(0, 35)];
+    static $counter = null;
+    $counter ??= random_int(0, 36 ** 4 - 1);
+    $counter = ($counter + 1) % (36 ** 4);
+    $pad = static fn (string $s, int $n) => substr(str_pad($s, $n, '0', STR_PAD_LEFT), -$n);
+    $time = $pad(base_convert((string) (int) floor(microtime(true) * 1000), 10, 36), 8);
+    $machine = $pad(base_convert((string) (crc32((string) gethostname() . getmypid()) % (36 ** 4)), 10, 36), 4);
+    $random = '';
+    for ($i = 0; $i < 8; $i++) {
+        $random .= 'abcdefghijklmnopqrstuvwxyz0123456789'[random_int(0, 35)];
     }
-    return $id;
+    return 'c' . $time . $pad(base_convert((string) $counter, 10, 36), 4) . $machine . $random;
 }
 
 /** "Tapis de bain antidérapant" → "tapis-de-bain-antiderapant". Arabic-only names get a short random address. */

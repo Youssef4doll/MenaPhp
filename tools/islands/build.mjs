@@ -48,6 +48,7 @@ const result = await esbuild.build({
     "next/image": path.join(here, "shims-next-image.tsx"),
     "next/dynamic": path.join(here, "shims-next-dynamic.tsx"),
     "@/lib/client/cart": path.join(here, "shims-cart.ts"),
+    "@/app/[lang]/suivi/actions": path.join(here, "shims-suivi-actions.ts"),
     // The real basket, for the file above.
     "@mena/lib/client/cart": path.join(mena, "src/lib/client/cart.ts"),
   },

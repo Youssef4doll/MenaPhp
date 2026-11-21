@@ -377,6 +377,63 @@ final class Orders
         return ['ok' => true, 'ref' => $order['ref'], 'token' => $token];
     }
 
+    /** customerOrderView: what the customer's own pages show of an order. No full address, no phone. */
+    public static function customerView(string $id): ?array
+    {
+        $o = Db::one('SELECT id, ref, status, name, governorate, city, subtotal, discount, "deliveryFee", total, "paymentMethod", "paymentStatus", "deliveryQuote", carrier, "trackingNumber", locale,
+            to_char("createdAt", \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') AS "createdAt", to_char("confirmedAt", \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') AS "confirmedAt",
+            to_char("shippedAt", \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') AS "shippedAt", to_char("deliveredAt", \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') AS "deliveredAt"
+            FROM "Order" WHERE id = ?', [$id]);
+        if (!$o) {
+            return null;
+        }
+        foreach (['subtotal', 'discount', 'deliveryFee', 'total'] as $k) {
+            $o[$k] = (int) $o[$k];
+        }
+        $o['items'] = array_map(static fn ($i) => [
+            'id' => $i['id'], 'name' => $i['name'], 'variantName' => $i['variantName'], 'unitPrice' => (int) $i['unitPrice'], 'qty' => (int) $i['qty'], 'lineTotal' => (int) $i['lineTotal'],
+            'offerLabel' => $i['offerLabel'], 'offerLabelAr' => $i['offerLabelAr'], 'productId' => $i['productId'],
+            'variant' => $i['vName'] !== null ? ['name' => $i['vName'], 'nameAr' => $i['vNameAr']] : null,
+            'product' => $i['slug'] !== null ? ['slug' => $i['slug'], 'nameAr' => $i['pNameAr'], 'images' => $i['imageId'] ? [['mediaId' => $i['imageId']]] : []] : null,
+            'review' => $i['reviewId'] ? ['id' => $i['reviewId']] : null,
+        ], Db::all('SELECT i.id, i.name, i."variantName", i."unitPrice", i.qty, i."lineTotal", i."offerLabel", i."offerLabelAr", i."productId",
+            v.name AS "vName", v."nameAr" AS "vNameAr", p.slug, p."nameAr" AS "pNameAr",
+            (SELECT pi."mediaId" FROM "ProductImage" pi WHERE pi."productId" = p.id AND pi.kind = \'GALLERY\' ORDER BY pi.sort, pi.id LIMIT 1) AS "imageId",
+            (SELECT r.id FROM "Review" r WHERE r."orderItemId" = i.id) AS "reviewId"
+            FROM "OrderItem" i LEFT JOIN "ProductVariant" v ON v.id = i."variantId" LEFT JOIN "Product" p ON p.id = i."productId" WHERE i."orderId" = ? ORDER BY i.id', [$id]));
+        $o['returns'] = Db::all('SELECT status, to_char("createdAt", \'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"\') AS "createdAt" FROM "ReturnRequest" WHERE "orderId" = ? ORDER BY "createdAt" DESC LIMIT 1', [$id]);
+        $o['firstName'] = preg_split('/\s+/u', (string) $o['name'])[0] ?? '';
+        unset($o['name']);
+        return $o;
+    }
+
+    /** The tokens of the orders this browser holds (the "mena_orders" cookie). */
+    public static function cookieTokens(): array
+    {
+        return array_values(array_filter(explode('.', (string) ($_COOKIE['mena_orders'] ?? '')), static fn ($t) => (bool) preg_match('/^[A-Za-z0-9_-]{16,64}$/', $t)));
+    }
+
+    /** accessibleOrder: the order's id if this browser holds its token. */
+    public static function accessible(string $ref): ?string
+    {
+        $ts = self::cookieTokens();
+        if (!$ts) {
+            return null;
+        }
+        $v = Db::value('SELECT id FROM "Order" WHERE ref = ? AND "accessHash" IN (' . Db::marks($ts) . ') LIMIT 1', [$ref, ...array_map([Tokens::class, 'hash'], $ts)]);
+        return $v ?: null;
+    }
+
+    /** rememberedOrders: this browser's orders, newest first. */
+    public static function remembered(): array
+    {
+        $ts = self::cookieTokens();
+        if (!$ts) {
+            return [];
+        }
+        return Db::all('SELECT ref, status, total FROM "Order" WHERE "accessHash" IN (' . Db::marks($ts) . ') ORDER BY "createdAt" DESC', array_map([Tokens::class, 'hash'], $ts));
+    }
+
     /** The order a tracking-link token opens, with its lines and history. */
     public static function byToken(string $token): ?array
     {

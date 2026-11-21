@@ -32,6 +32,9 @@ $wa = Ui::waFloat();
 <meta name="theme-color" content="#ffffff">
 <title><?= e($pageTitle) ?></title>
 <meta name="description" content="<?= e(mb_substr((string) $desc, 0, 300)) ?>">
+<?php if (!empty($robots)) : ?>
+<meta name="robots" content="<?= e($robots) ?>">
+<?php endif ?>
 <?php if (!empty($canonical)) : ?>
 <link rel="canonical" href="<?= e($base . $canonical) ?>">
 <link rel="alternate" hreflang="fr" href="<?= e($base . url($bare, 'fr')) ?>">

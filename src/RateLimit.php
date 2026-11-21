@@ -19,6 +19,7 @@ final class RateLimit
         'events' => [120, 60],
         'quote' => [300, 60],
         'promo' => [30, 600],
+        'review' => [10, 3600],
     ];
 
     /** True when this hit is allowed. */
